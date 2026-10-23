@@ -1,21 +1,44 @@
 import { useState } from "react";
 import Summary from "./components/Summary";
+import BudgetSection from "./components/BudgetSection";
+import BudgetEditor from "./components/BudgetEditor";
 import TransactionForm from "./components/TransactionForm";
 import { useTransactions } from "./hooks/useTransactions";
+import { useBudgets } from "./hooks/useBudgets";
 import { useLocalStorage } from "./hooks/useLocalStorage";
+import { getSpentByCategory, getMonthPool } from "./utils/budget";
 import { getIcon, formatVND, formatDate } from "./constants";
 
-const currentMonth = () => new Date().toLocaleDateString("sv-SE").slice(0, 7);
+const todayStr = () => new Date().toLocaleDateString("sv-SE");
+const currentMonth = () => todayStr().slice(0, 7);
 
 export default function App() {
   const { transactions, addTransaction, deleteTransaction } = useTransactions();
+  const { budgets, setBudgets } = useBudgets();
   const [initialBalance, setInitialBalance] = useLocalStorage("finance-app:initial-balance", 0);
   const [month, setMonth] = useState(currentMonth);
   const [formType, setFormType] = useState(null); // null | "income" | "expense"
+  const [editingBudgets, setEditingBudgets] = useState(false);
+
+  const spent = getSpentByCategory(transactions, month);
+  const pool = getMonthPool(transactions, initialBalance, month);
 
   const monthTransactions = transactions
     .filter((t) => t.date.startsWith(month))
     .sort((a, b) => b.date.localeCompare(a.date));
+
+  // Trả khoản cố định (vd tiền nhà): tạo giao dịch chi đúng số còn thiếu
+  const handlePayFixed = (category, amount) => {
+    if (amount <= 0) return;
+    const today = todayStr();
+    addTransaction({
+      type: "expense",
+      amount,
+      category,
+      date: today.startsWith(month) ? today : `${month}-01`,
+      note: "Chi cố định hàng tháng",
+    });
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 pb-12">
@@ -32,6 +55,14 @@ export default function App() {
           month={month}
           onMonthChange={setMonth}
           onAddClick={setFormType}
+        />
+
+        <BudgetSection
+          budgets={budgets}
+          spent={spent}
+          pool={pool}
+          onEdit={() => setEditingBudgets(true)}
+          onPayFixed={handlePayFixed}
         />
 
         <section>
@@ -66,7 +97,8 @@ export default function App() {
                   </div>
 
                   <span className={`font-semibold ${t.type === "income" ? "text-emerald-600" : "text-rose-600"}`}>
-                    {t.type === "income" ? "+" : "−"}{formatVND(t.amount)}
+                    {t.type === "income" ? "+" : "−"}
+                    {formatVND(t.amount)}
                   </span>
 
                   <button
@@ -87,8 +119,19 @@ export default function App() {
         <TransactionForm
           key={formType}
           type={formType}
+          transactions={transactions}
+          budgets={budgets}
           onAdd={addTransaction}
           onClose={() => setFormType(null)}
+        />
+      )}
+
+      {editingBudgets && (
+        <BudgetEditor
+          budgets={budgets}
+          pool={pool}
+          onSave={setBudgets}
+          onClose={() => setEditingBudgets(false)}
         />
       )}
     </div>
