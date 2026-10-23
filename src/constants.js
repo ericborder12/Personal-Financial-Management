@@ -6,6 +6,7 @@ export const CATEGORIES = {
     { name: "Mua sắm", icon: "🛍️" },
     { name: "Giải trí", icon: "🎮" },
     { name: "Học tập", icon: "📚" },
+    { name: "Tiêu tự do", icon: "🎉" },
     { name: "Khác", icon: "📦" },
   ],
   income: [
