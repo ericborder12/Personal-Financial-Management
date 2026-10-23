@@ -1,4 +1,4 @@
-const fmt = (n) => n.toLocaleString("vi-VN") + "đ";
+import { formatVND } from "../constants";
 
 export default function Summary({
   transactions,
@@ -14,68 +14,80 @@ export default function Summary({
   const monthList = transactions.filter((t) => t.date.startsWith(month));
   const monthIncome = sum(monthList, "income");
   const monthExpense = sum(monthList, "expense");
+  const diff = monthIncome - monthExpense;
 
   const balance = initialBalance + sum(transactions, "income") - sum(transactions, "expense");
 
   return (
-    <div className="space-y-4 rounded-xl bg-white p-6 shadow">
-      <div>
-        <p className="text-sm text-gray-500">Số dư hiện tại</p>
-        <p className={`text-3xl font-bold ${balance < 0 ? "text-red-600" : "text-gray-900"}`}>
-          {fmt(balance)}
+    <div className="space-y-4">
+      {/* Thẻ số dư */}
+      <div className="rounded-3xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 p-6 text-white shadow-lg shadow-indigo-500/30">
+        <p className="text-sm text-white/80">Số dư hiện tại</p>
+        <p className={`mt-1 text-4xl font-bold tracking-tight ${balance < 0 ? "text-red-200" : ""}`}>
+          {formatVND(balance)}
         </p>
+
+        <label className="mt-5 block text-xs text-white/70">
+          Số dư ban đầu
+          <div className="mt-1 flex items-center rounded-xl bg-white/15 px-3 backdrop-blur">
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={initialBalance || ""}
+              placeholder="0"
+              onChange={(e) =>
+                onInitialBalanceChange(Math.max(0, Math.floor(Number(e.target.value)) || 0))
+              }
+              className="w-full bg-transparent py-2 text-base text-white placeholder-white/50 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            />
+            <span className="text-white/70">đ</span>
+          </div>
+        </label>
       </div>
 
-      <label className="block text-sm text-gray-600">
-        Số dư ban đầu (VND)
-        <input
-          type="number"
-          min="0"
-          step="1"
-          value={initialBalance || ""}
-          placeholder="0"
-          onChange={(e) => onInitialBalanceChange(Math.max(0, Math.floor(Number(e.target.value)) || 0))}
-          className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </label>
-
-      <div className="grid grid-cols-2 gap-2">
+      {/* Nút Thu / Chi */}
+      <div className="grid grid-cols-2 gap-3">
         <button
           onClick={() => onAddClick("income")}
-          className="rounded-lg bg-green-500 py-3 text-lg font-semibold text-white hover:bg-green-600"
+          className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 py-4 text-lg font-semibold text-white shadow-md shadow-emerald-500/30 transition hover:bg-emerald-600 active:scale-95"
         >
-          + Thu
+          <span className="text-2xl leading-none">+</span> Thu
         </button>
         <button
           onClick={() => onAddClick("expense")}
-          className="rounded-lg bg-red-500 py-3 text-lg font-semibold text-white hover:bg-red-600"
+          className="flex items-center justify-center gap-2 rounded-2xl bg-rose-500 py-4 text-lg font-semibold text-white shadow-md shadow-rose-500/30 transition hover:bg-rose-600 active:scale-95"
         >
-          − Chi
+          <span className="text-2xl leading-none">−</span> Chi
         </button>
       </div>
 
-      <div className="border-t pt-4">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="font-medium">Thống kê tháng</p>
+      {/* Thống kê tháng */}
+      <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-semibold text-slate-800">Thống kê tháng</h2>
           <input
             type="month"
             value={month}
             onChange={(e) => onMonthChange(e.target.value)}
-            className="rounded-lg border border-gray-300 px-2 py-1"
+            className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-indigo-400"
           />
         </div>
-        <div className="grid grid-cols-3 gap-2 text-center text-sm">
-          <div className="rounded-lg bg-green-50 p-2">
-            <p className="text-gray-500">Thu</p>
-            <p className="font-semibold text-green-600">{fmt(monthIncome)}</p>
+
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="rounded-xl bg-emerald-50 p-3">
+            <p className="text-xs text-slate-500">Thu</p>
+            <p className="mt-1 text-sm font-semibold text-emerald-600">{formatVND(monthIncome)}</p>
           </div>
-          <div className="rounded-lg bg-red-50 p-2">
-            <p className="text-gray-500">Chi</p>
-            <p className="font-semibold text-red-600">{fmt(monthExpense)}</p>
+          <div className="rounded-xl bg-rose-50 p-3">
+            <p className="text-xs text-slate-500">Chi</p>
+            <p className="mt-1 text-sm font-semibold text-rose-600">{formatVND(monthExpense)}</p>
           </div>
-          <div className="rounded-lg bg-gray-50 p-2">
-            <p className="text-gray-500">Chênh lệch</p>
-            <p className="font-semibold">{fmt(monthIncome - monthExpense)}</p>
+          <div className="rounded-xl bg-slate-50 p-3">
+            <p className="text-xs text-slate-500">Chênh lệch</p>
+            <p className={`mt-1 text-sm font-semibold ${diff < 0 ? "text-rose-600" : "text-slate-800"}`}>
+              {diff > 0 ? "+" : ""}{formatVND(diff)}
+            </p>
           </div>
         </div>
       </div>
