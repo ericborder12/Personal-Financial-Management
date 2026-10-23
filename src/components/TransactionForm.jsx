@@ -1,32 +1,27 @@
 import { useState } from "react";
 
-const EXPENSE_CATEGORIES = ["Ăn uống", "Di chuyển", "Nhà ở", "Mua sắm", "Giải trí", "Học tập", "Khác"];
-const INCOME_CATEGORIES = ["Lương", "Thưởng", "Làm thêm", "Khác"];
+const CATEGORIES = {
+  expense: ["Ăn uống", "Di chuyển", "Nhà ở", "Mua sắm", "Giải trí", "Học tập", "Khác"],
+  income: ["Lương", "Thưởng", "Làm thêm", "Khác"],
+};
 
-const today = () => new Date().toISOString().slice(0, 10);
+// Ngày theo giờ máy (toISOString dùng giờ UTC nên có thể lệch ngày)
+const today = () => new Date().toLocaleDateString("sv-SE");
 
-export default function TransactionForm({ onAdd }) {
-  const [type, setType] = useState("expense");
+export default function TransactionForm({ type, onAdd, onClose }) {
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState(EXPENSE_CATEGORIES[0]);
+  const [category, setCategory] = useState(CATEGORIES[type][0]);
   const [date, setDate] = useState(today());
   const [note, setNote] = useState("");
 
-  const categories = type === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
-
-  const handleTypeChange = (newType) => {
-    setType(newType);
-    setCategory(newType === "expense" ? EXPENSE_CATEGORIES[0] : INCOME_CATEGORIES[0]);
-  };
+  const isIncome = type === "income";
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const value = Number(amount);
     if (!Number.isInteger(value) || value <= 0) return;
-
     onAdd({ type, amount: value, category, date, note: note.trim() });
-    setAmount("");
-    setNote("");
+    onClose();
   };
 
   const inputClass =
@@ -34,27 +29,11 @@ export default function TransactionForm({ onAdd }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 rounded-xl bg-white p-6 shadow">
-      <h2 className="text-lg font-semibold">Thêm giao dịch</h2>
-
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => handleTypeChange("expense")}
-          className={`rounded-lg py-2 font-medium ${
-            type === "expense" ? "bg-red-500 text-white" : "bg-gray-100 text-gray-600"
-          }`}
-        >
-          Chi tiêu
-        </button>
-        <button
-          type="button"
-          onClick={() => handleTypeChange("income")}
-          className={`rounded-lg py-2 font-medium ${
-            type === "income" ? "bg-green-500 text-white" : "bg-gray-100 text-gray-600"
-          }`}
-        >
-          Thu nhập
-        </button>
+      <div className="flex items-center justify-between">
+        <h2 className={`text-lg font-semibold ${isIncome ? "text-green-600" : "text-red-600"}`}>
+          {isIncome ? "+ Thêm khoản thu" : "− Thêm khoản chi"}
+        </h2>
+        <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-700">✕</button>
       </div>
 
       <input
@@ -65,11 +44,12 @@ export default function TransactionForm({ onAdd }) {
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
         className={inputClass}
+        autoFocus
         required
       />
 
       <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputClass}>
-        {categories.map((c) => (
+        {CATEGORIES[type].map((c) => (
           <option key={c} value={c}>{c}</option>
         ))}
       </select>
@@ -84,8 +64,13 @@ export default function TransactionForm({ onAdd }) {
         className={inputClass}
       />
 
-      <button type="submit" className="w-full rounded-lg bg-blue-600 py-2 font-medium text-white hover:bg-blue-700">
-        Thêm
+      <button
+        type="submit"
+        className={`w-full rounded-lg py-2 font-medium text-white ${
+          isIncome ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"
+        }`}
+      >
+        Lưu
       </button>
     </form>
   );

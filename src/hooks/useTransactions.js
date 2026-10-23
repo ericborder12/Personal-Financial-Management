@@ -11,12 +11,10 @@ function loadFromStorage() {
   }
 }
 
-export function useTransactions() {
-  const [transactions, setTransactions] = useState(loadFromStorage);
+import { useLocalStorage } from "./useLocalStorage";
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
-  }, [transactions]);
+export function useTransactions() {
+  const [transactions, setTransactions] = useLocalStorage("finance-app:transactions", []);
 
   const addTransaction = (data) => {
     setTransactions((prev) => [{ id: crypto.randomUUID(), ...data }, ...prev]);
