@@ -1,4 +1,5 @@
 from django.db import connection, transaction
+from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -7,6 +8,7 @@ from rest_framework.views import APIView
 from .models import Budget, Profile, Transaction
 from .serializers import (
     BudgetSerializer,
+    ImportSerializer,
     ProfileSerializer,
     TransactionSerializer,
 )
@@ -79,3 +81,41 @@ class ProfileView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+class ImportView(APIView):
+    def post(self, request):
+        profile = get_profile(request.user)
+        has_data = (
+            profile.imported_at is not None
+            or profile.initial_balance != 0
+            or Transaction.objects.filter(user=request.user).exists()
+            or Budget.objects.filter(user=request.user).exists()
+        )
+        if has_data:
+            return Response(
+                {"detail": "Tài khoản đã có dữ liệu, không thể nhập."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        serializer = ImportSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        with transaction.atomic():
+            Transaction.objects.bulk_create(
+                [Transaction(user=request.user, **item) for item in data["transactions"]]
+            )
+            Budget.objects.bulk_create(
+                [Budget(user=request.user, **item) for item in data["budgets"]]
+            )
+            profile.initial_balance = data["initial_balance"]
+            profile.imported_at = timezone.now()
+            profile.save(update_fields=["initial_balance", "imported_at"])
+
+        return Response(
+            {
+                "transactions": len(data["transactions"]),
+                "budgets": len(data["budgets"]),
+            }
+        )

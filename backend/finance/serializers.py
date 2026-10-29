@@ -38,3 +38,39 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = Profile
         fields = ["initial_balance", "imported_at"]
         read_only_fields = ["imported_at"]
+
+
+class ImportTransactionSerializer(serializers.ModelSerializer):
+    amount = StrictIntegerField(min_value=1, max_value=MAX_AMOUNT)
+
+    class Meta:
+        model = Transaction
+        fields = ["type", "amount", "category", "date", "note"]
+
+
+class ImportBudgetSerializer(serializers.ModelSerializer):
+    limit = StrictIntegerField(min_value=0, max_value=MAX_AMOUNT)
+
+    class Meta:
+        model = Budget
+        fields = ["category", "limit", "fixed"]
+
+
+class ImportSerializer(serializers.Serializer):
+    transactions = ImportTransactionSerializer(many=True, required=False)
+    budgets = ImportBudgetSerializer(many=True, required=False)
+    initial_balance = StrictIntegerField(
+        min_value=0, max_value=MAX_AMOUNT, required=False
+    )
+
+    def validate(self, attrs):
+        attrs.setdefault("transactions", [])
+        attrs.setdefault("budgets", [])
+        attrs.setdefault("initial_balance", 0)
+        return attrs
+
+    def validate_budgets(self, value):
+        categories = [item["category"] for item in value]
+        if len(categories) != len(set(categories)):
+            raise serializers.ValidationError("Danh mục bị trùng.")
+        return value
