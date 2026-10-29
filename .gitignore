@@ -34,3 +34,5 @@ backend/staticfiles/
 .env
 .env.local
 .vercel
+venv/
+.venv/
