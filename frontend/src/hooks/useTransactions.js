@@ -1,28 +1,58 @@
-import { useState, useEffect } from "react";
-
-const STORAGE_KEY = "finance-app:transactions";
-
-function loadFromStorage() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-import { useLocalStorage } from "./useLocalStorage";
+import { useCallback, useEffect, useState } from "react";
+import { api } from "../api/client";
 
 export function useTransactions() {
-  const [transactions, setTransactions] = useLocalStorage("finance-app:transactions", []);
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const addTransaction = (data) => {
-    setTransactions((prev) => [{ id: crypto.randomUUID(), ...data }, ...prev]);
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .listTransactions()
+      .then((data) => {
+        if (!cancelled) setTransactions(data);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setTransactions(await api.listTransactions());
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const addTransaction = async (data) => {
+    const created = await api.createTransaction(data);
+    setTransactions((prev) => [created, ...prev]);
+    return created;
   };
 
-  const deleteTransaction = (id) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== id));
+  const deleteTransaction = async (id) => {
+    await api.deleteTransaction(id);
+    setTransactions((prev) => prev.filter((item) => item.id !== id));
   };
 
-  return { transactions, addTransaction, deleteTransaction };
+  return {
+    transactions,
+    loading,
+    error,
+    addTransaction,
+    deleteTransaction,
+    refresh,
+  };
 }

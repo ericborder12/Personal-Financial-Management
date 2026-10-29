@@ -13,7 +13,7 @@ const todayStr = () => new Date().toLocaleDateString("sv-SE");
 const currentMonth = () => todayStr().slice(0, 7);
 
 export default function App() {
-  const { transactions, addTransaction, deleteTransaction } = useTransactions();
+  const { transactions, loading, error, addTransaction, deleteTransaction } = useTransactions();
   const { budgets, setBudgets } = useBudgets();
   const [initialBalance, setInitialBalance] = useLocalStorage("finance-app:initial-balance", 0);
   const [month, setMonth] = useState(currentMonth);
@@ -28,16 +28,20 @@ export default function App() {
     .sort((a, b) => b.date.localeCompare(a.date));
 
   // Trả khoản cố định (vd tiền nhà): tạo giao dịch chi đúng số còn thiếu
-  const handlePayFixed = (category, amount) => {
+  const handlePayFixed = async (category, amount) => {
     if (amount <= 0) return;
     const today = todayStr();
-    addTransaction({
-      type: "expense",
-      amount,
-      category,
-      date: today.startsWith(month) ? today : `${month}-01`,
-      note: "Chi cố định hàng tháng",
-    });
+    try {
+      await addTransaction({
+        type: "expense",
+        amount,
+        category,
+        date: today.startsWith(month) ? today : `${month}-01`,
+        note: "Chi cố định hàng tháng",
+      });
+    } catch (err) {
+      window.alert(err.message);
+    }
   };
 
   return (
@@ -68,7 +72,17 @@ export default function App() {
         <section>
           <h2 className="mb-3 font-semibold text-slate-800">Giao dịch trong tháng</h2>
 
-          {monthTransactions.length === 0 ? (
+          {error && (
+            <p className="mb-3 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              {error}
+            </p>
+          )}
+
+          {loading ? (
+            <div className="rounded-2xl border-2 border-dashed border-slate-200 py-10 text-center text-sm text-slate-400">
+              Đang tải giao dịch...
+            </div>
+          ) : monthTransactions.length === 0 ? (
             <div className="rounded-2xl border-2 border-dashed border-slate-200 py-10 text-center text-slate-400">
               <p className="text-3xl">🗒️</p>
               <p className="mt-2 text-sm">Chưa có giao dịch nào trong tháng này</p>
@@ -102,7 +116,7 @@ export default function App() {
                   </span>
 
                   <button
-                    onClick={() => deleteTransaction(t.id)}
+                    onClick={() => deleteTransaction(t.id).catch((err) => window.alert(err.message))}
                     className="rounded-full p-1 text-slate-300 transition hover:bg-rose-50 hover:text-rose-500"
                     aria-label="Xóa giao dịch"
                   >

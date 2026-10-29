@@ -5,11 +5,24 @@ import { getSpentByCategory } from "../utils/budget";
 // Ngày theo giờ máy (toISOString dùng giờ UTC nên có thể lệch ngày)
 const today = () => new Date().toLocaleDateString("sv-SE");
 
+function errorMessage(err) {
+  if (typeof err?.data?.detail === "string") return err.data.detail;
+  if (err?.data && typeof err.data === "object") {
+    for (const value of Object.values(err.data)) {
+      if (Array.isArray(value) && value.length > 0) return String(value[0]);
+      if (typeof value === "string") return value;
+    }
+  }
+  return err?.message || "Có lỗi xảy ra, vui lòng thử lại.";
+}
+
 export default function TransactionForm({ type, transactions, budgets, onAdd, onClose }) {
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState(CATEGORIES[type][0].name);
   const [date, setDate] = useState(today());
   const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const isIncome = type === "income";
   const value = Number(amount);
@@ -33,12 +46,21 @@ export default function TransactionForm({ type, transactions, budgets, onAdd, on
     }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (saving) return;
     if (!Number.isInteger(value) || value <= 0) return;
     if (warning?.level === "over" && !window.confirm(`${warning.text}.\nVẫn lưu giao dịch này?`)) return;
-    onAdd({ type, amount: value, category, date, note: note.trim() });
-    onClose();
+    setSaving(true);
+    setError("");
+    try {
+      await onAdd({ type, amount: value, category, date, note: note.trim() });
+      onClose();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const inputClass =
@@ -130,13 +152,18 @@ export default function TransactionForm({ type, transactions, budgets, onAdd, on
           />
         </div>
 
+        {error && (
+          <p className="rounded-lg bg-rose-50 p-2 text-sm text-rose-700">{error}</p>
+        )}
+
         <button
           type="submit"
-          className={`w-full rounded-xl py-3 text-lg font-semibold text-white transition active:scale-95 ${
+          disabled={saving}
+          className={`w-full rounded-xl py-3 text-lg font-semibold text-white transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 ${
             isIncome ? "bg-emerald-500 hover:bg-emerald-600" : "bg-rose-500 hover:bg-rose-600"
           }`}
         >
-          Lưu giao dịch
+          {saving ? "Đang lưu..." : "Lưu giao dịch"}
         </button>
       </form>
     </div>
