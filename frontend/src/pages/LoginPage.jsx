@@ -1,30 +1,78 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { useAuth } from "../auth/useAuth";
 
+const query = new URLSearchParams(window.location.search);
+const emailToken = { uid: query.get("uid") || "", token: query.get("token") || "" };
+
 export default function LoginPage() {
   const { login, register } = useAuth();
-  const [mode, setMode] = useState("login");
+  const [flow, setFlow] = useState(() =>
+    query.has("verify") ? "verifying" : query.has("reset") ? "reset" : "login"
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const switchMode = (next) => {
-    setMode(next);
+  useEffect(() => {
+    if (flow !== "verifying") return;
+    let cancelled = false;
+    api
+      .verifyEmail(emailToken)
+      .then((result) => {
+        if (!cancelled) {
+          setNotice(result.detail);
+          setFlow("verified");
+          window.history.replaceState({}, "", window.location.pathname);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(errorMessage(err));
+          setFlow("verify-error");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [flow]);
+
+  const switchFlow = (next) => {
+    setFlow(next);
     setError("");
+    setNotice("");
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
+    setNotice("");
     setSubmitting(true);
     try {
-      if (mode === "login") {
+      if (flow === "login") {
         await login(email.trim(), password);
-      } else {
-        await register(email.trim(), password, displayName.trim());
+      } else if (flow === "register") {
+        const result = await register(email.trim(), password, displayName.trim());
+        setNotice(result.detail);
+      } else if (flow === "forgot") {
+        const result = await api.requestPasswordReset({ email: email.trim() });
+        setNotice(result.detail);
+      } else if (flow === "reset") {
+        if (password !== passwordConfirm) {
+          throw new Error("Mật khẩu xác nhận không khớp.");
+        }
+        const result = await api.confirmPasswordReset({
+          ...emailToken,
+          password,
+        });
+        setNotice(result.detail);
+        setFlow("login");
+        window.history.replaceState({}, "", window.location.pathname);
       }
     } catch (err) {
       setError(errorMessage(err));
@@ -32,6 +80,32 @@ export default function LoginPage() {
       setSubmitting(false);
     }
   };
+
+  const handleResendVerification = async () => {
+    setError("");
+    setNotice("");
+    if (!email.trim()) {
+      setError("Nhập email để gửi lại liên kết xác thực.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const result = await api.resendVerificationEmail({ email: email.trim() });
+      setNotice(result.detail);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const isForm = ["login", "register", "forgot", "reset"].includes(flow);
+  const title =
+    flow === "forgot"
+      ? "Quên mật khẩu"
+      : flow === "reset"
+        ? "Đặt lại mật khẩu"
+        : "Quản lý tài chính";
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-950 px-4 py-10">
@@ -43,105 +117,188 @@ export default function LoginPage() {
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-3xl ring-1 ring-white/20 backdrop-blur">
             💸
           </div>
-          <h1 className="text-2xl font-bold">Quản lý tài chính</h1>
+          <h1 className="text-2xl font-bold">{title}</h1>
           <p className="mt-1 text-sm text-white/60">
-            Đăng nhập để tiếp tục theo dõi thu chi
+            {flow === "register"
+              ? "Tạo tài khoản để bắt đầu theo dõi thu chi"
+              : flow === "forgot"
+                ? "Nhập email để nhận liên kết đặt lại mật khẩu"
+                : flow === "reset"
+                  ? "Chọn mật khẩu mới cho tài khoản"
+                  : "Đăng nhập để tiếp tục theo dõi thu chi"}
           </p>
         </div>
 
         <div className="rounded-3xl bg-white p-6 shadow-2xl shadow-black/30">
-          <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
-            <button
-              type="button"
-              onClick={() => switchMode("login")}
-              className={`rounded-lg py-2 text-sm font-semibold transition ${
-                mode === "login"
-                  ? "bg-white text-indigo-600 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              Đăng nhập
-            </button>
-            <button
-              type="button"
-              onClick={() => switchMode("register")}
-              className={`rounded-lg py-2 text-sm font-semibold transition ${
-                mode === "register"
-                  ? "bg-white text-indigo-600 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              Đăng ký
-            </button>
-          </div>
+          {(flow === "login" || flow === "register") && (
+            <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
+              <button
+                type="button"
+                onClick={() => switchFlow("login")}
+                className={`rounded-lg py-2 text-sm font-semibold transition ${
+                  flow === "login"
+                    ? "bg-white text-indigo-600 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Đăng nhập
+              </button>
+              <button
+                type="button"
+                onClick={() => switchFlow("register")}
+                className={`rounded-lg py-2 text-sm font-semibold transition ${
+                  flow === "register"
+                    ? "bg-white text-indigo-600 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Đăng ký
+              </button>
+            </div>
+          )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === "register" && (
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">
-                  Tên hiển thị <span className="text-slate-400">(không bắt buộc)</span>
-                </span>
-                <input
-                  type="text"
-                  value={displayName}
-                  onChange={(event) => setDisplayName(event.target.value)}
-                  autoComplete="name"
-                  maxLength={100}
-                  placeholder="Ví dụ: Minh"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
-                />
-              </label>
-            )}
-
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium text-slate-700">Email</span>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                autoComplete="email"
-                placeholder="ban@example.com"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium text-slate-700">Mật khẩu</span>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
-                placeholder="••••••••"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
-              />
-              {mode === "register" && (
-                <span className="mt-1 block text-xs text-slate-400">
-                  Tối thiểu 8 ký tự, không dùng mật khẩu quá phổ biến.
-                </span>
+          {isForm ? (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {flow === "register" && (
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">
+                    Tên hiển thị <span className="text-slate-400">(không bắt buộc)</span>
+                  </span>
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={(event) => setDisplayName(event.target.value)}
+                    autoComplete="name"
+                    maxLength={100}
+                    placeholder="Ví dụ: Minh"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                  />
+                </label>
               )}
-            </label>
 
-            {error && (
-              <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                {error}
-              </p>
-            )}
+              {flow !== "reset" && (
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">Email</span>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    autoComplete="email"
+                    placeholder="ban@example.com"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                  />
+                </label>
+              )}
 
+              {flow !== "forgot" && (
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">Mật khẩu</span>
+                  <input
+                    type="password"
+                    required
+                    minLength={flow === "reset" ? 8 : undefined}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    autoComplete={flow === "login" ? "current-password" : "new-password"}
+                    placeholder="••••••••"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                  />
+                  {flow === "register" && (
+                    <span className="mt-1 block text-xs text-slate-400">
+                      Tối thiểu 8 ký tự, không dùng mật khẩu quá phổ biến.
+                    </span>
+                  )}
+                </label>
+              )}
+
+              {flow === "reset" && (
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">Nhập lại mật khẩu</span>
+                  <input
+                    type="password"
+                    required
+                    minLength={8}
+                    value={passwordConfirm}
+                    onChange={(event) => setPasswordConfirm(event.target.value)}
+                    autoComplete="new-password"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                  />
+                </label>
+              )}
+
+              {error && (
+                <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>
+              )}
+              {notice && (
+                <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{notice}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full rounded-xl bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 py-3 font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:opacity-95 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submitting
+                  ? "Đang xử lý..."
+                  : flow === "login"
+                    ? "Đăng nhập"
+                    : flow === "register"
+                      ? "Tạo tài khoản"
+                      : flow === "forgot"
+                        ? "Gửi liên kết"
+                        : "Cập nhật mật khẩu"}
+              </button>
+            </form>
+          ) : (
+            <div className="space-y-4">
+              {flow === "verifying" && (
+                <p className="text-center text-sm text-slate-500">Đang xác thực email...</p>
+              )}
+              {flow === "verified" && (
+                <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{notice}</p>
+              )}
+              {flow === "verify-error" && (
+                <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>
+              )}
+              <button
+                type="button"
+                onClick={() => switchFlow("login")}
+                className="w-full rounded-xl bg-indigo-600 py-3 font-semibold text-white hover:bg-indigo-700"
+              >
+                Đến đăng nhập
+              </button>
+            </div>
+          )}
+
+          {flow === "login" && (
+            <div className="mt-3 flex flex-col gap-2 text-center">
+              <button
+                type="button"
+                onClick={() => switchFlow("forgot")}
+                className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+              >
+                Quên mật khẩu?
+              </button>
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={handleResendVerification}
+                className="text-sm font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50"
+              >
+                Gửi lại email xác thực
+              </button>
+            </div>
+          )}
+          {(flow === "forgot" || flow === "reset") && (
             <button
-              type="submit"
-              disabled={submitting}
-              className="w-full rounded-xl bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 py-3 font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:opacity-95 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+              type="button"
+              onClick={() => switchFlow("login")}
+              className="mt-3 w-full text-center text-sm font-medium text-indigo-600 hover:text-indigo-700"
             >
-              {submitting
-                ? "Đang xử lý..."
-                : mode === "login"
-                  ? "Đăng nhập"
-                  : "Tạo tài khoản"}
+              Quay lại đăng nhập
             </button>
-          </form>
+          )}
 
           <p className="mt-5 text-center text-xs text-slate-400">
             Dữ liệu của mỗi tài khoản được lưu riêng trên máy chủ.

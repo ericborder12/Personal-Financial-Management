@@ -9,6 +9,10 @@
 - `docker-compose.yml` — Postgres 16 cho dev.
 - Production: Vercel Services (frontend + backend trong một project) và Neon Postgres.
 
+Giao dịch có phân trang 20 mục/trang; hỗ trợ tìm trong danh mục/ghi chú, lọc theo
+ngày, loại, danh mục và khoảng tiền, sắp xếp theo ngày, số tiền hoặc danh mục.
+Đăng ký cần xác thực email; người dùng có thể yêu cầu đặt lại mật khẩu.
+
 ## Yêu cầu
 
 - Node 24+
@@ -71,6 +75,16 @@ Biến môi trường truyền trực tiếp trên dòng lệnh sẽ ghi đè gi
 | `ALLOWED_HOSTS` | Danh sách host, phân tách bằng dấu phẩy |
 | `CSRF_TRUSTED_ORIGINS` | Origin được tin cậy, ví dụ `https://app.vercel.app` |
 | `CORS_ALLOWED_ORIGINS` | Chỉ cần khi frontend chạy khác origin |
+| `FRONTEND_URL` | URL frontend để tạo liên kết xác thực/đặt lại mật khẩu |
+| `EMAIL_BACKEND` | Django email backend; mặc định console khi `DEBUG=True`, SMTP khi production |
+| `EMAIL_HOST`, `EMAIL_PORT` | SMTP server, mặc định cổng `587` |
+| `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | Tài khoản và mật khẩu SMTP |
+| `EMAIL_USE_TLS` | Bật STARTTLS, mặc định `True` |
+| `DEFAULT_FROM_EMAIL` | Email gửi đi; mặc định là `EMAIL_HOST_USER` |
+
+Khi phát triển, email được in ra console. Trước khi deploy, cấu hình SMTP (ví dụ
+Resend hoặc Brevo) và đặt `FRONTEND_URL` thành URL ứng dụng đang deploy. Email
+xác thực và đặt lại mật khẩu có hiệu lực trong 3 ngày.
 
 ## Deploy Vercel + Neon
 
@@ -90,6 +104,12 @@ npx vercel env add SECRET_KEY production
 npx vercel env add DEBUG production          # False
 npx vercel env add ALLOWED_HOSTS production  # .vercel.app
 npx vercel env add CSRF_TRUSTED_ORIGINS production  # https://<project>.vercel.app
+npx vercel env add FRONTEND_URL production   # https://<project>.vercel.app
+npx vercel env add EMAIL_HOST production
+npx vercel env add EMAIL_PORT production    # 587
+npx vercel env add EMAIL_HOST_USER production
+npx vercel env add EMAIL_HOST_PASSWORD production
+npx vercel env add DEFAULT_FROM_EMAIL production
 ```
 
 4. Chạy migration một lần từ máy local (Vercel không tự migrate):
@@ -126,5 +146,5 @@ Dữ liệu bản cũ nằm trong `localStorage` với các key `finance-app:tra
 
 ## Giới hạn v1
 
-- Chưa có xác thực email, quên mật khẩu, đăng nhập mạng xã hội, rate limiting.
-- Chưa có phân trang giao dịch.
+- Chưa có đăng nhập mạng xã hội hoặc rate limiting.
+- Chưa hỗ trợ nạp giao dịch định kỳ, nhiều ví hoặc đồng bộ giá tài sản.

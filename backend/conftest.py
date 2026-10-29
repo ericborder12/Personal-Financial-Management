@@ -4,6 +4,11 @@ from rest_framework.test import APIClient
 from accounts.models import User
 
 
+@pytest.fixture(autouse=True)
+def locmem_email_backend(settings):
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
+
 @pytest.fixture
 def api_client():
     return APIClient()

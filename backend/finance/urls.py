@@ -7,11 +7,13 @@ from .views import (
     ProfileView,
     TransactionDetailView,
     TransactionListCreateView,
+    TransactionSummaryView,
 )
 
 urlpatterns = [
     path("health/", HealthView.as_view(), name="health"),
     path("transactions/", TransactionListCreateView.as_view(), name="transaction-list"),
+    path("transactions/summary/", TransactionSummaryView.as_view(), name="transaction-summary"),
     path(
         "transactions/<uuid:pk>/",
         TransactionDetailView.as_view(),

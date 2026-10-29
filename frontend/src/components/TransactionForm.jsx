@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { errorMessage } from "../api/errors";
 import { CATEGORIES, formatVND } from "../constants";
-import { getSpentByCategory } from "../utils/budget";
 
 // Ngày theo giờ máy (toISOString dùng giờ UTC nên có thể lệch ngày)
 const today = () => new Date().toLocaleDateString("sv-SE");
 
-export default function TransactionForm({ type, transactions, budgets, onAdd, onClose }) {
+export default function TransactionForm({ type, spentByCategory, budgets, onAdd, onClose }) {
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState(CATEGORIES[type][0].name);
   const [date, setDate] = useState(today());
@@ -19,7 +18,7 @@ export default function TransactionForm({ type, transactions, budgets, onAdd, on
 
   // Tính tình trạng hạn mức của danh mục đang chọn
   const budget = isIncome ? null : budgets[category];
-  const spent = budget ? getSpentByCategory(transactions, date.slice(0, 7))[category] || 0 : 0;
+  const spent = budget ? spentByCategory[category] || 0 : 0;
   let warning = null;
   if (budget && value > 0) {
     const after = spent + value;

@@ -1,56 +1,86 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
 
-export function useTransactions() {
-  const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+export function useTransactions(filters) {
+  const [data, setData] = useState({ results: [], count: 0 });
+  const [loadedKey, setLoadedKey] = useState(null);
+  const [errorState, setErrorState] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const {
+    page,
+    startDate,
+    endDate,
+    search,
+    type,
+    category,
+    minAmount,
+    maxAmount,
+    ordering,
+  } = filters;
+  const params = useMemo(() => ({
+    page,
+    start_date: startDate,
+    end_date: endDate,
+    search,
+    type,
+    category,
+    min_amount: minAmount,
+    max_amount: maxAmount,
+    ordering,
+  }), [page, startDate, endDate, search, type, category, minAmount, maxAmount, ordering]);
 
   useEffect(() => {
     let cancelled = false;
     api
-      .listTransactions()
-      .then((data) => {
-        if (!cancelled) setTransactions(data);
+      .listTransactions(params)
+      .then((response) => {
+        if (!cancelled) {
+          setData(response);
+          setLoadedKey(params);
+          setErrorState(null);
+        }
       })
       .catch((err) => {
-        if (!cancelled) setError(err.message);
+        if (!cancelled) {
+          setLoadedKey(params);
+          setErrorState({ key: params, message: err.message });
+        }
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [params]);
 
   const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    setRefreshing(true);
     try {
-      setTransactions(await api.listTransactions());
+      setData(await api.listTransactions(params));
+      setLoadedKey(params);
+      setErrorState(null);
     } catch (err) {
-      setError(err.message);
+      setErrorState({ key: params, message: err.message });
     } finally {
-      setLoading(false);
+      setRefreshing(false);
     }
-  }, []);
+  }, [params]);
 
-  const addTransaction = async (data) => {
-    const created = await api.createTransaction(data);
-    setTransactions((prev) => [created, ...prev]);
+  const addTransaction = async (transaction) => {
+    const created = await api.createTransaction(transaction);
+    await refresh();
     return created;
   };
 
   const deleteTransaction = async (id) => {
     await api.deleteTransaction(id);
-    setTransactions((prev) => prev.filter((item) => item.id !== id));
+    await refresh();
   };
 
   return {
-    transactions,
-    loading,
-    error,
+    transactions: data.results,
+    count: data.count,
+    loading: refreshing || (loadedKey !== params && errorState?.key !== params),
+    error: errorState?.key === params ? errorState.message : null,
+    page,
     addTransaction,
     deleteTransaction,
     refresh,

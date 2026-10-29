@@ -29,3 +29,21 @@ class RegisterSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
+
+
+class EmailAddressSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class EmailTokenSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
+
+
+class PasswordResetConfirmSerializer(EmailTokenSerializer):
+    password = serializers.CharField(write_only=True)
+
+    def validate_password(self, value):
+        user = self.context.get("user")
+        validate_password(value, user=user)
+        return value

@@ -1,22 +1,18 @@
 import { formatVND } from "../constants";
 
 export default function Summary({
-  transactions,
+  summary,
   initialBalance,
   onInitialBalanceChange,
   month,
   onMonthChange,
   onAddClick,
 }) {
-  const sum = (list, type) =>
-    list.filter((t) => t.type === type).reduce((acc, t) => acc + t.amount, 0);
-
-  const monthList = transactions.filter((t) => t.date.startsWith(month));
-  const monthIncome = sum(monthList, "income");
-  const monthExpense = sum(monthList, "expense");
+  const monthIncome = summary?.month_income ?? 0;
+  const monthExpense = summary?.month_expense ?? 0;
   const diff = monthIncome - monthExpense;
-
-  const balance = initialBalance + sum(transactions, "income") - sum(transactions, "expense");
+  const balance =
+    initialBalance + (summary?.income ?? 0) - (summary?.expense ?? 0);
 
   return (
     <div className="space-y-4">

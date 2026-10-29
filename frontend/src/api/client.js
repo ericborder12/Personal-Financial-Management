@@ -81,8 +81,26 @@ export const api = {
   register: (data) => request("/auth/register/", { method: "POST", body: data }),
   login: (data) => request("/auth/login/", { method: "POST", body: data }),
   logout: () => request("/auth/logout/", { method: "POST" }),
+  verifyEmail: (data) => request("/auth/verify-email/", { method: "POST", body: data }),
+  resendVerificationEmail: (data) =>
+    request("/auth/verification-email/", { method: "POST", body: data }),
+  requestPasswordReset: (data) =>
+    request("/auth/password-reset/", { method: "POST", body: data }),
+  confirmPasswordReset: (data) =>
+    request("/auth/password-reset/confirm/", { method: "POST", body: data }),
 
-  listTransactions: () => request("/transactions/"),
+  listTransactions: (params = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== "" && value !== null && value !== undefined) {
+        query.set(key, value);
+      }
+    });
+    const suffix = query.toString();
+    return request(`/transactions/${suffix ? `?${suffix}` : ""}`);
+  },
+  transactionSummary: (month) =>
+    request(`/transactions/summary/?${new URLSearchParams({ month })}`),
   createTransaction: (data) => request("/transactions/", { method: "POST", body: data }),
   deleteTransaction: (id) => request(`/transactions/${id}/`, { method: "DELETE" }),
 
