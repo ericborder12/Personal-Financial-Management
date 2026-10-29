@@ -3,22 +3,42 @@ import Summary from "./components/Summary";
 import BudgetSection from "./components/BudgetSection";
 import BudgetEditor from "./components/BudgetEditor";
 import TransactionForm from "./components/TransactionForm";
+import ImportDialog from "./components/ImportDialog";
+import { useAuth } from "./auth/useAuth";
 import { useTransactions } from "./hooks/useTransactions";
 import { useBudgets } from "./hooks/useBudgets";
 import { useProfile } from "./hooks/useProfile";
 import { getSpentByCategory, getMonthPool } from "./utils/budget";
+import { hasLegacyData, readLegacy } from "./utils/legacy";
 import { getIcon, formatVND, formatDate } from "./constants";
 
 const todayStr = () => new Date().toLocaleDateString("sv-SE");
 const currentMonth = () => todayStr().slice(0, 7);
 
 export default function App() {
+  const { user, logout } = useAuth();
   const { transactions, loading, error, addTransaction, deleteTransaction } = useTransactions();
   const { budgets, saveBudgets } = useBudgets();
-  const { initialBalance, setInitialBalance } = useProfile();
+  const { initialBalance, importedAt, loading: profileLoading, setInitialBalance } = useProfile();
+  const [legacy] = useState(readLegacy);
+  const [importDismissed, setImportDismissed] = useState(false);
   const [month, setMonth] = useState(currentMonth);
   const [formType, setFormType] = useState(null); // null | "income" | "expense"
   const [editingBudgets, setEditingBudgets] = useState(false);
+
+  const showImport =
+    !profileLoading &&
+    importedAt === null &&
+    !importDismissed &&
+    hasLegacyData(legacy);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (err) {
+      window.alert(err.message);
+    }
+  };
 
   const spent = getSpentByCategory(transactions, month);
   const pool = getMonthPool(transactions, initialBalance, month);
@@ -46,9 +66,21 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-12">
-      <header className="px-4 pb-2 pt-8 text-center">
-        <h1 className="text-2xl font-bold text-slate-800">💸 Quản lý tài chính</h1>
-        <p className="text-sm text-slate-500">Theo dõi thu chi cá nhân</p>
+      <header className="px-4 pb-2 pt-8">
+        <div className="mx-auto flex max-w-md items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-slate-800">💸 Quản lý tài chính</h1>
+            <p className="truncate text-sm text-slate-500">
+              {user.display_name || user.email}
+            </p>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50"
+          >
+            Đăng xuất
+          </button>
+        </div>
       </header>
 
       <main className="mx-auto max-w-md space-y-6 px-4 pt-4">
@@ -128,6 +160,8 @@ export default function App() {
           )}
         </section>
       </main>
+
+      {showImport && <ImportDialog onClose={() => setImportDismissed(true)} />}
 
       {formType && (
         <TransactionForm
