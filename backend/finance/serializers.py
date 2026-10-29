@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Transaction
+from .models import Budget, Transaction
 
 MAX_AMOUNT = 9223372036854775807
 
@@ -21,3 +21,11 @@ class TransactionSerializer(serializers.ModelSerializer):
         model = Transaction
         fields = ["id", "type", "amount", "category", "date", "note", "created_at"]
         read_only_fields = ["id", "created_at"]
+
+
+class BudgetSerializer(serializers.ModelSerializer):
+    limit = StrictIntegerField(min_value=0, max_value=MAX_AMOUNT)
+
+    class Meta:
+        model = Budget
+        fields = ["category", "limit", "fixed"]

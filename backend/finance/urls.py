@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    BudgetView,
     HealthView,
     TransactionDetailView,
     TransactionListCreateView,
@@ -14,4 +15,5 @@ urlpatterns = [
         TransactionDetailView.as_view(),
         name="transaction-detail",
     ),
+    path("budgets/", BudgetView.as_view(), name="budget-list"),
 ]

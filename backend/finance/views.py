@@ -1,11 +1,11 @@
-from django.db import connection
-from rest_framework import generics
+from django.db import connection, transaction
+from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Transaction
-from .serializers import TransactionSerializer
+from .models import Budget, Transaction
+from .serializers import BudgetSerializer, TransactionSerializer
 
 
 class HealthView(APIView):
@@ -35,3 +35,26 @@ class TransactionDetailView(generics.DestroyAPIView):
 
     def get_queryset(self):
         return Transaction.objects.filter(user=self.request.user)
+
+
+class BudgetView(APIView):
+    def get(self, request):
+        budgets = Budget.objects.filter(user=request.user).order_by("category")
+        return Response(BudgetSerializer(budgets, many=True).data)
+
+    def put(self, request):
+        serializer = BudgetSerializer(data=request.data, many=True)
+        serializer.is_valid(raise_exception=True)
+        items = serializer.validated_data
+        categories = [item["category"] for item in items]
+        if len(categories) != len(set(categories)):
+            return Response(
+                {"detail": "Danh mục bị trùng."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        with transaction.atomic():
+            Budget.objects.filter(user=request.user).delete()
+            Budget.objects.bulk_create(
+                [Budget(user=request.user, **item) for item in items]
+            )
+        budgets = Budget.objects.filter(user=request.user).order_by("category")
+        return Response(BudgetSerializer(budgets, many=True).data)
