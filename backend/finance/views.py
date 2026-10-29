@@ -4,8 +4,16 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Budget, Transaction
-from .serializers import BudgetSerializer, TransactionSerializer
+from .models import Budget, Profile, Transaction
+from .serializers import (
+    BudgetSerializer,
+    ProfileSerializer,
+    TransactionSerializer,
+)
+
+
+def get_profile(user):
+    return Profile.objects.get_or_create(user=user)[0]
 
 
 class HealthView(APIView):
@@ -58,3 +66,16 @@ class BudgetView(APIView):
             )
         budgets = Budget.objects.filter(user=request.user).order_by("category")
         return Response(BudgetSerializer(budgets, many=True).data)
+
+
+class ProfileView(APIView):
+    def get(self, request):
+        profile = get_profile(request.user)
+        return Response(ProfileSerializer(profile).data)
+
+    def put(self, request):
+        profile = get_profile(request.user)
+        serializer = ProfileSerializer(profile, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
