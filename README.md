@@ -14,6 +14,7 @@
 - Node 24+
 - Python 3.12+
 - Docker (cho Postgres dev)
+- Vercel CLI 50.38+ (khi deploy)
 
 ## Dev
 
@@ -41,11 +42,24 @@ Mở `http://localhost:5173`. Vite proxy `/api` sang `http://localhost:8000`, n�
 ## Test
 
 ```bash
-cd backend && .venv/bin/pytest -q
-cd frontend && npm run lint && npm run build
+# Backend trên SQLite tạm (không cần Docker)
+cd backend
+DATABASE_URL=sqlite:////tmp/finance-test.sqlite3 .venv/bin/pytest -q
+
+# Backend trên Postgres dev
+docker compose up -d db
+DATABASE_URL=postgres://finance:finance@localhost:5432/finance .venv/bin/pytest -q
+
+# Kiểm tra migration còn thiếu
+DATABASE_URL=postgres://finance:finance@localhost:5432/finance \
+  .venv/bin/python manage.py makemigrations --check --dry-run
+
+# Frontend
+cd ../frontend
+npm run lint && npm run build
 ```
 
-Backend test dùng Postgres từ `backend/.env`; nếu không có `DATABASE_URL` thì fallback SQLite.
+Biến môi trường truyền trực tiếp trên dòng lệnh sẽ ghi đè giá trị trong `backend/.env`.
 
 ## Biến môi trường backend
 
@@ -81,9 +95,9 @@ npx vercel env add CSRF_TRUSTED_ORIGINS production  # https://<project>.vercel.a
 4. Chạy migration một lần từ máy local (Vercel không tự migrate):
 
 ```bash
-npx vercel env pull .env.local
-DATABASE_URL="$(grep '^DATABASE_URL=' .env.local | cut -d= -f2-)" \
-  backend/.venv/bin/python backend/manage.py migrate
+npx vercel env pull .env.local --environment production
+export DATABASE_URL="$(sed -n 's/^DATABASE_URL=//p' .env.local | tr -d '"')"
+backend/.venv/bin/python backend/manage.py migrate
 ```
 
 5. Deploy:
@@ -92,7 +106,16 @@ DATABASE_URL="$(grep '^DATABASE_URL=' .env.local | cut -d= -f2-)" \
 npx vercel --prod
 ```
 
-`vercel.json` dùng Vercel Services: `/api/*`, `/admin/*`, `/static/*` vào Django; mọi path khác vào React. Vì cùng domain nên session cookie và CSRF hoạt động mà không cần CORS.
+`vercel.json` dùng Vercel Services: `/api/*`, `/admin/*`, `/static/*` vào Django; mọi path khác vào React. Vì cùng domain nên session cookie và CSRF hoạt động mà không cần CORS. Vercel tự chạy `collectstatic` khi thấy `STATIC_ROOT` và phục vụ file tĩnh qua CDN.
+
+## Nhập dữ liệu cũ
+
+Dữ liệu bản cũ nằm trong `localStorage` với các key `finance-app:transactions`, `finance-app:budgets`, `finance-app:initial-balance`. Sau khi đăng nhập lần đầu, nếu còn dữ liệu, app hiện hộp thoại nhập một lần:
+
+- **Nhập dữ liệu**: gửi lên server, xoá 3 key localStorage rồi tải lại trang.
+- **Bỏ qua**: đóng hộp thoại, không xoá dữ liệu; tải lại trang sẽ hỏi lại.
+- Có thể chọn file JSON `{ "transactions": [...], "budgets": [...], "initial_balance": 0 }` thay cho dữ liệu trình duyệt.
+- Mỗi tài khoản chỉ nhập được một lần; nếu đã có dữ liệu, server trả `409`.
 
 ## Bảo mật
 
