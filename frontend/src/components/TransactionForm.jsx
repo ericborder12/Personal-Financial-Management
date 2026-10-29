@@ -1,20 +1,10 @@
 import { useState } from "react";
+import { errorMessage } from "../api/errors";
 import { CATEGORIES, formatVND } from "../constants";
 import { getSpentByCategory } from "../utils/budget";
 
 // Ngày theo giờ máy (toISOString dùng giờ UTC nên có thể lệch ngày)
 const today = () => new Date().toLocaleDateString("sv-SE");
-
-function errorMessage(err) {
-  if (typeof err?.data?.detail === "string") return err.data.detail;
-  if (err?.data && typeof err.data === "object") {
-    for (const value of Object.values(err.data)) {
-      if (Array.isArray(value) && value.length > 0) return String(value[0]);
-      if (typeof value === "string") return value;
-    }
-  }
-  return err?.message || "Có lỗi xảy ra, vui lòng thử lại.";
-}
 
 export default function TransactionForm({ type, transactions, budgets, onAdd, onClose }) {
   const [amount, setAmount] = useState("");

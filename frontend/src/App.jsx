@@ -5,7 +5,7 @@ import BudgetEditor from "./components/BudgetEditor";
 import TransactionForm from "./components/TransactionForm";
 import { useTransactions } from "./hooks/useTransactions";
 import { useBudgets } from "./hooks/useBudgets";
-import { useLocalStorage } from "./hooks/useLocalStorage";
+import { useProfile } from "./hooks/useProfile";
 import { getSpentByCategory, getMonthPool } from "./utils/budget";
 import { getIcon, formatVND, formatDate } from "./constants";
 
@@ -14,8 +14,8 @@ const currentMonth = () => todayStr().slice(0, 7);
 
 export default function App() {
   const { transactions, loading, error, addTransaction, deleteTransaction } = useTransactions();
-  const { budgets, setBudgets } = useBudgets();
-  const [initialBalance, setInitialBalance] = useLocalStorage("finance-app:initial-balance", 0);
+  const { budgets, saveBudgets } = useBudgets();
+  const { initialBalance, setInitialBalance } = useProfile();
   const [month, setMonth] = useState(currentMonth);
   const [formType, setFormType] = useState(null); // null | "income" | "expense"
   const [editingBudgets, setEditingBudgets] = useState(false);
@@ -144,7 +144,7 @@ export default function App() {
         <BudgetEditor
           budgets={budgets}
           pool={pool}
-          onSave={setBudgets}
+          onSave={saveBudgets}
           onClose={() => setEditingBudgets(false)}
         />
       )}

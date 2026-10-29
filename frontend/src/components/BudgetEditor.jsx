@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { errorMessage } from "../api/errors";
 import { CATEGORIES, formatVND } from "../constants";
 
 export default function BudgetEditor({ budgets, pool, onSave, onClose }) {
@@ -10,19 +11,30 @@ export default function BudgetEditor({ budgets, pool, onSave, onClose }) {
       ])
     )
   );
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const update = (name, patch) => setDraft((d) => ({ ...d, [name]: { ...d[name], ...patch } }));
 
   const total = Object.values(draft).reduce((a, b) => a + b.limit, 0);
   const remain = pool - total;
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (saving) return;
     const result = {};
     for (const [name, b] of Object.entries(draft)) {
       if (b.limit > 0) result[name] = b;
     }
-    onSave(result);
-    onClose();
+    setSaving(true);
+    setError("");
+    try {
+      await onSave(result);
+      onClose();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -93,11 +105,18 @@ export default function BudgetEditor({ budgets, pool, onSave, onClose }) {
           ))}
         </ul>
 
+        {error && (
+          <p className="mt-4 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">
+            {error}
+          </p>
+        )}
+
         <button
           onClick={handleSave}
-          className="mt-5 w-full rounded-xl bg-indigo-600 py-3 text-lg font-semibold text-white hover:bg-indigo-700 active:scale-95"
+          disabled={saving}
+          className="mt-5 w-full rounded-xl bg-indigo-600 py-3 text-lg font-semibold text-white hover:bg-indigo-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Lưu hạn mức
+          {saving ? "Đang lưu..." : "Lưu hạn mức"}
         </button>
       </div>
     </div>

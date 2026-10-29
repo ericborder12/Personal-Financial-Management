@@ -1,15 +1,6 @@
 import { useState } from "react";
+import { errorMessage } from "../api/errors";
 import { useAuth } from "../auth/useAuth";
-
-function firstError(data) {
-  if (!data || typeof data !== "object") return null;
-  if (typeof data.detail === "string") return data.detail;
-  for (const value of Object.values(data)) {
-    if (Array.isArray(value) && value.length > 0) return String(value[0]);
-    if (typeof value === "string") return value;
-  }
-  return null;
-}
 
 export default function LoginPage() {
   const { login, register } = useAuth();
@@ -36,7 +27,7 @@ export default function LoginPage() {
         await register(email.trim(), password, displayName.trim());
       }
     } catch (err) {
-      setError(firstError(err.data) || err.message || "Có lỗi xảy ra.");
+      setError(errorMessage(err));
     } finally {
       setSubmitting(false);
     }
