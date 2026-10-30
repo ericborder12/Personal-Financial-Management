@@ -108,17 +108,20 @@ export default function LoginPage() {
         : "Quản lý tài chính";
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-950 px-4 py-10">
-      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-indigo-500/30 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-fuchsia-500/20 blur-3xl" />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-indigo-50 to-violet-100 px-4 py-10">
+      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-indigo-300/40 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-violet-300/40 blur-3xl" />
 
       <div className="relative w-full max-w-md">
-        <div className="mb-6 text-center text-white">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-3xl ring-1 ring-white/20 backdrop-blur">
+        <div className="mb-6 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-3xl text-white shadow-lg shadow-indigo-500/25">
             💸
           </div>
-          <h1 className="text-2xl font-bold">{title}</h1>
-          <p className="mt-1 text-sm text-white/60">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600">
+            Tài chính cá nhân
+          </p>
+          <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
+          <p className="mt-2 text-sm text-slate-600">
             {flow === "register"
               ? "Tạo tài khoản để bắt đầu theo dõi thu chi"
               : flow === "forgot"
@@ -129,7 +132,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="rounded-3xl bg-white p-6 shadow-2xl shadow-black/30">
+        <div className="rounded-3xl border border-white/80 bg-white p-6 shadow-xl shadow-indigo-950/10 sm:p-8">
           {(flow === "login" || flow === "register") && (
             <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
               <button
@@ -237,7 +240,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full rounded-xl bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 py-3 font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:opacity-95 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 py-3 font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:brightness-105 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting
                   ? "Đang xử lý..."
@@ -264,7 +267,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => switchFlow("login")}
-                className="w-full rounded-xl bg-indigo-600 py-3 font-semibold text-white hover:bg-indigo-700"
+                className="w-full rounded-xl bg-indigo-600 py-3 font-semibold text-white shadow-sm shadow-indigo-500/20 hover:bg-indigo-700"
               >
                 Đến đăng nhập
               </button>

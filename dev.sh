@@ -83,26 +83,23 @@ docker compose up -d --wait db
 
 # --- 2) Backend ----------------------------------------------------------------
 wait_for_db() {
-local max_attempts=60
-local attempt=1
+  local max_attempts=60 attempt=1
+  local check='from django.db import connection; connection.ensure_connection()'
 
-log "Chờ Django kết nối được PostgreSQL..."
+  log "Chờ Django kết nối được PostgreSQL..."
+  while (( attempt <= max_attempts )); do
+    if (cd backend && "$PY" manage.py shell -c "$check" >/dev/null 2>&1); then
+      log "Django đã kết nối PostgreSQL thành công."
+      return 0
+    fi
+    log "PostgreSQL chưa sẵn sàng (lần $attempt/$max_attempts), thử lại sau 2 giây..."
+    sleep 2
+    attempt=$((attempt + 1))
+  done
 
-while (( attempt <= max_attempts )); do
-if (cd backend && "$PY" manage.py shell -c 
-'from django.db import connection; connection.ensure_connection()' 
->/dev/null 2>&1); then
-log "Django đã kết nối PostgreSQL thành công."
-return 0
-fi
-
-log "PostgreSQL chưa sẵn sàng (lần $attempt/$max_attempts), thử lại sau 2 giây..."
-sleep 2
-attempt=$((attempt + 1))
-
-done
-
-die "Không thể kết nối PostgreSQL sau $((max_attempts * 2)) giây. Kiểm tra cấu hình .env và log Docker: docker compose logs db"
+  # In lỗi thật thay vì nuốt đi bằng >/dev/null
+  (cd backend && "$PY" manage.py shell -c "$check") || true
+  die "Không thể kết nối PostgreSQL sau $((max_attempts * 2)) giây."
 }
 
 wait_for_db
