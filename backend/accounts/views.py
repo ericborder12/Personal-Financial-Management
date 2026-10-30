@@ -42,9 +42,37 @@ def send_account_email(user, purpose):
     if purpose == "verify":
         subject = "Xác thực email tài khoản"
         message = f"Xác thực email bằng liên kết này (có hiệu lực trong 3 ngày):\n\n{link}"
+        html_message = f"""<!DOCTYPE html>
+<html>
+  <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <p>Xác thực email bằng liên kết này (có hiệu lực trong 3 ngày):</p>
+    <p>
+      <a href="{link}" style="color: #4f46e5;">Xác thực email qua trình duyệt</a>
+    </p>
+    <p>
+      Hoặc mở đường dẫn sau để xác thực:<br>
+      <a href="{link}">{link}</a>
+    </p>
+    <p>Nếu bạn không phải là người đã đăng ký, bạn có thể bỏ qua email này.</p>
+  </body>
+</html>"""
     else:
         subject = "Đặt lại mật khẩu"
         message = f"Đặt lại mật khẩu bằng liên kết này (có hiệu lực trong 3 ngày):\n\n{link}"
+        html_message = f"""<!DOCTYPE html>
+<html>
+  <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <p>Đặt lại mật khẩu bằng liên kết này (có hiệu lực trong 3 ngày):</p>
+    <p>
+      <a href="{link}" style="color: #4f46e5;">Đặt lại mật khẩu qua trình duyệt</a>
+    </p>
+    <p>
+      Hoặc mở đường dẫn sau để đặt lại mật khẩu:<br>
+      <a href="{link}">{link}</a>
+    </p>
+    <p>Nếu bạn không yêu cầu đặt lại mật khẩu, bạn có thể bỏ qua email này.</p>
+  </body>
+</html>"""
     try:
         sent = send_mail(
             subject,
@@ -52,6 +80,7 @@ def send_account_email(user, purpose):
             settings.DEFAULT_FROM_EMAIL,
             [user.email],
             fail_silently=False,
+            html_message=html_message,
         )
     except (OSError, smtplib.SMTPException) as exc:
         raise EmailDeliveryError() from exc

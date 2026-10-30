@@ -76,15 +76,36 @@ Biến môi trường truyền trực tiếp trên dòng lệnh sẽ ghi đè gi
 | `CSRF_TRUSTED_ORIGINS` | Origin được tin cậy, ví dụ `https://app.vercel.app` |
 | `CORS_ALLOWED_ORIGINS` | Chỉ cần khi frontend chạy khác origin |
 | `FRONTEND_URL` | URL frontend để tạo liên kết xác thực/đặt lại mật khẩu |
-| `EMAIL_BACKEND` | Django email backend; mặc định console khi `DEBUG=True`, SMTP khi production |
+| `EMAIL_BACKEND` | Django email backend; mặc định tự chọn SMTP khi `EMAIL_HOST` có giá trị, console khi chưa cấu hình |
 | `EMAIL_HOST`, `EMAIL_PORT` | SMTP server, mặc định cổng `587` |
 | `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | Tài khoản và mật khẩu SMTP |
 | `EMAIL_USE_TLS` | Bật STARTTLS, mặc định `True` |
 | `DEFAULT_FROM_EMAIL` | Email gửi đi; mặc định là `EMAIL_HOST_USER` |
 
-Khi phát triển, email được in ra console. Trước khi deploy, cấu hình SMTP (ví dụ
-Resend hoặc Brevo) và đặt `FRONTEND_URL` thành URL ứng dụng đang deploy. Email
-xác thực và đặt lại mật khẩu có hiệu lực trong 3 ngày.
+Muốn gửi email thật (xác thực / đặt lại mật khẩu) thì phải cấu hình SMTP.
+Khi `EMAIL_HOST` có giá trị (ví dụ `smtp.gmail.com`, `smtp.resend.com`,
+`smtp-relay.brevo.com`) Django tự động dùng backend SMTP; khi để trống thì dùng
+backend console và email chỉ được in ra terminal khi `DEBUG=True`.
+
+Ví dụ Gmail (cần mật khẩu ứng dụng):
+
+```
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=you@gmail.com
+EMAIL_HOST_PASSWORD=your-app-password
+EMAIL_USE_TLS=True
+DEFAULT_FROM_EMAIL=you@gmail.com
+```
+
+Với Resend hoặc Brevo thì điền SMTP host/port của họ (Brevo: `smtp-relay.brevo.com`,
+cổng `587`; Resend: `smtp.resend.com`, cổng `587`).
+
+Khi phát triển, nếu chưa đặt `EMAIL_HOST` email chỉ in ra console. Trước khi
+deploy, cấu hình SMTP (ví dụ Resend hoặc Brevo) và đặt `FRONTEND_URL` thành URL
+ứng dụng đang deploy. Email xác thực và đặt lại mật khẩu có hiệu lực trong 3
+ngày.
 
 ## Deploy Vercel + Neon
 

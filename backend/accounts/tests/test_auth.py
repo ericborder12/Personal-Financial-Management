@@ -1,4 +1,5 @@
 import pytest
+from django.conf import settings
 from django.core import mail
 from rest_framework.test import APIClient
 
@@ -19,6 +20,18 @@ def test_register_creates_inactive_user_and_sends_verification(api_client):
     assert api_client.get("/api/auth/me/").status_code == 401
     assert len(mail.outbox) == 1
     assert "verify=1" in mail.outbox[0].body
+
+
+@pytest.mark.django_db
+def test_verification_email_content(api_client):
+    register(api_client)
+    email = mail.outbox[0]
+    assert email.subject == "Xác thực email tài khoản"
+    assert email.to == ["a@example.com"]
+    assert email.from_email == settings.DEFAULT_FROM_EMAIL
+    assert "verify=1" in email.body
+    assert f"{settings.FRONTEND_URL}/?verify=1" in email.body
+    assert "3 ngày" in email.body
 
 
 @pytest.mark.django_db
@@ -141,6 +154,23 @@ def test_password_reset_request_does_not_disclose_unknown_email(api_client):
     assert response.json()["detail"] == (
         "Nếu email thuộc tài khoản đã xác thực, hướng dẫn sẽ được gửi."
     )
+
+
+@pytest.mark.django_db
+def test_password_reset_email_content(api_client):
+    user = User.objects.create_user(email="a@example.com", password="oldpass123")
+    response = api_client.post(
+        "/api/auth/password-reset/",
+        {"email": user.email},
+        format="json",
+    )
+    assert response.status_code == 200
+    assert len(mail.outbox) == 1
+    email = mail.outbox[0]
+    assert email.subject == "Đặt lại mật khẩu"
+    assert email.to == [user.email]
+    assert "reset=1" in email.body
+    assert f"{settings.FRONTEND_URL}/?reset=1" in email.body
 
 
 @pytest.mark.django_db
