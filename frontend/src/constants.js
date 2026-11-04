@@ -20,6 +20,6 @@ export const CATEGORIES = {
 export const getIcon = (type, name) =>
   CATEGORIES[type]?.find((c) => c.name === name)?.icon ?? "💰";
 
-export const formatVND = (n) => n.toLocaleString("vi-VN") + "đ";
+export const formatVND = (n) => (Number(n) || 0).toLocaleString("vi-VN") + " ₫";
 
-export const formatDate = (iso) => iso.split("-").reverse().join("/");
+export const formatDate = (iso) => (iso ? iso.split("-").reverse().join("/") : "");
