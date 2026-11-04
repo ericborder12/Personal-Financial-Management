@@ -30,30 +30,30 @@ export default function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobile
         />
       )}
 
-      {/* Sidebar container */}
+      {/* Sidebar container: widened to 72 (288px) for comfortable readability */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex w-64 flex-col border-r border-slate-200/90 bg-white transition-transform duration-300 ease-in-out dark:border-slate-800 dark:bg-slate-900 lg:static lg:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 z-50 flex w-72 flex-col border-r border-slate-200/90 bg-white transition-transform duration-300 ease-in-out dark:border-slate-800 dark:bg-slate-900 lg:static lg:translate-x-0 shrink-0 ${
           mobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
         }`}
       >
         {/* Brand header */}
-        <div className="flex h-16 items-center justify-between px-5 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-lg shadow-sm shadow-blue-500/20">
+        <div className="flex h-20 items-center justify-between px-6 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-xl shadow-md shadow-blue-500/25">
               ₫
             </div>
             <div>
-              <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">
+              <span className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white leading-none block">
                 FinanceFlow
               </span>
-              <span className="block text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+              <span className="block mt-1 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
                 Tài chính cá nhân
               </span>
             </div>
           </div>
           <button
             onClick={() => setMobileOpen(false)}
-            className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 lg:hidden dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+            className="cursor-pointer rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 lg:hidden dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
             aria-label="Đóng thanh điều hướng"
           >
             <IconX className="w-5 h-5" />
@@ -61,9 +61,9 @@ export default function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobile
         </div>
 
         {/* Navigation list */}
-        <nav className="flex-1 space-y-1 p-3 overflow-y-auto">
-          <div className="px-3 py-2 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-            Điều hướng
+        <nav className="flex-1 space-y-1.5 p-4 overflow-y-auto">
+          <div className="px-3.5 py-2 text-xs font-bold tracking-wider text-slate-400 uppercase">
+            Điều hướng chính
           </div>
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
@@ -75,20 +75,22 @@ export default function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobile
                   setActiveTab(item.id);
                   setMobileOpen(false);
                 }}
-                className={`group cursor-pointer flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition-all duration-200 ${
+                className={`group cursor-pointer flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${
                   isActive
-                    ? "bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400 shadow-xs"
+                    ? "bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400 shadow-xs font-bold"
                     : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-200"
                 }`}
               >
                 <Icon
-                  className={`w-4 h-4 transition-transform duration-200 group-hover:scale-110 ${
-                    isActive ? "text-blue-600 dark:text-blue-400" : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300"
+                  className={`w-5 h-5 transition-transform duration-200 group-hover:scale-110 shrink-0 ${
+                    isActive
+                      ? "text-blue-600 dark:text-blue-400"
+                      : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300"
                   }`}
                 />
                 <span className="truncate">{item.label}</span>
                 {isActive && (
-                  <span className="ml-auto h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />
+                  <span className="ml-auto h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400 ring-4 ring-blue-100 dark:ring-blue-900/40" />
                 )}
               </button>
             );
@@ -96,15 +98,18 @@ export default function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobile
         </nav>
 
         {/* Footer info pill */}
-        <div className="p-4 border-t border-slate-100 dark:border-slate-800">
-          <div className="rounded-xl bg-slate-50 p-3 text-xs text-slate-500 dark:bg-slate-800/50 dark:text-slate-400 border border-slate-100 dark:border-slate-800">
+        <div className="p-5 border-t border-slate-100 dark:border-slate-800">
+          <div className="rounded-2xl bg-slate-50/80 p-4 text-xs text-slate-500 dark:bg-slate-800/60 dark:text-slate-400 border border-slate-200/80 dark:border-slate-800">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-slate-700 dark:text-slate-300">Tiền tệ</span>
-              <span className="rounded-md bg-white px-1.5 py-0.5 text-[10px] font-bold text-blue-600 shadow-2xs dark:bg-slate-700 dark:text-blue-300">
-                VNĐ
+              <span className="font-bold text-slate-700 dark:text-slate-200 text-xs">Đơn vị tiền tệ</span>
+              <span className="rounded-lg bg-blue-50 px-2 py-0.5 text-xs font-extrabold text-blue-600 border border-blue-200/60 dark:bg-blue-950/60 dark:text-blue-400 dark:border-blue-900/40">
+                VNĐ (₫)
               </span>
             </div>
-            <p className="mt-1 text-[11px] text-slate-400">Đồng bộ tự động theo thời gian thực</p>
+            <div className="mt-2.5 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Đồng bộ tự động thời gian thực</span>
+            </div>
           </div>
         </div>
       </aside>

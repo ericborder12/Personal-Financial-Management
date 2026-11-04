@@ -68,42 +68,42 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6">
       {/* Date Filter Bar & Presets */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold text-slate-500">Khoảng thời gian:</span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400">Khoảng thời gian:</span>
           <button
             onClick={() => setPreset("this_month")}
-            className={`cursor-pointer rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+            className={`cursor-pointer rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all ${
               activePreset === "this_month"
-                ? "bg-slate-900 text-white dark:bg-blue-600 shadow-2xs"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                ? "bg-slate-900 text-white dark:bg-blue-600 shadow-xs"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
             }`}
           >
             Tháng này
           </button>
           <button
             onClick={() => setPreset("last_3_months")}
-            className={`cursor-pointer rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+            className={`cursor-pointer rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all ${
               activePreset === "last_3_months"
-                ? "bg-slate-900 text-white dark:bg-blue-600 shadow-2xs"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                ? "bg-slate-900 text-white dark:bg-blue-600 shadow-xs"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
             }`}
           >
             3 tháng gần nhất
           </button>
           <button
             onClick={() => setPreset("this_year")}
-            className={`cursor-pointer rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+            className={`cursor-pointer rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all ${
               activePreset === "this_year"
-                ? "bg-slate-900 text-white dark:bg-blue-600 shadow-2xs"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                ? "bg-slate-900 text-white dark:bg-blue-600 shadow-xs"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
             }`}
           >
             Năm nay
           </button>
         </div>
 
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-2 text-xs sm:text-sm">
           <input
             type="date"
             value={startDate}
@@ -111,9 +111,9 @@ export default function ReportsPage() {
               setActivePreset("custom");
               setStartDate(e.target.value);
             }}
-            className="rounded-xl border border-slate-200/90 px-3 py-1.5 font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            className="rounded-xl border border-slate-200/90 px-3.5 py-2 font-semibold text-slate-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           />
-          <span className="text-slate-400 font-semibold">đến</span>
+          <span className="text-slate-400 font-bold">đến</span>
           <input
             type="date"
             value={endDate}
@@ -121,7 +121,7 @@ export default function ReportsPage() {
               setActivePreset("custom");
               setEndDate(e.target.value);
             }}
-            className="rounded-xl border border-slate-200/90 px-3 py-1.5 font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            className="rounded-xl border border-slate-200/90 px-3.5 py-2 font-semibold text-slate-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           />
         </div>
       </div>
@@ -133,31 +133,31 @@ export default function ReportsPage() {
       )}
 
       {/* Summary KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+        <div className="group rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
             Tổng thu nhập
           </span>
-          <div className="mt-2 text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 tabular-nums">
+          <div className="mt-2 text-3xl sm:text-4xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
             +{formatVND(total_income)}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <div className="group rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
             Tổng chi tiêu
           </span>
-          <div className="mt-2 text-2xl font-extrabold text-rose-600 dark:text-rose-400 tabular-nums">
+          <div className="mt-2 text-3xl sm:text-4xl font-black text-rose-600 dark:text-rose-400 tabular-nums">
             -{formatVND(total_expense)}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <div className="group rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
             Thặng dư / Tiết kiệm ròng
           </span>
           <div
-            className={`mt-2 text-2xl font-extrabold tabular-nums ${
+            className={`mt-2 text-3xl sm:text-4xl font-black tabular-nums ${
               net_savings >= 0
                 ? "text-blue-600 dark:text-blue-400"
                 : "text-rose-600 dark:text-rose-400"

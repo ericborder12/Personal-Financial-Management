@@ -28,7 +28,7 @@ export default function StatCard({ title, amount, subtitle, icon, trend, color =
   const scheme = colorStyles[color] || colorStyles.blue;
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+    <div className="group relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
       {/* Top micro accent bar on hover */}
       <div className={`absolute top-0 left-0 right-0 h-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${scheme.accent}`} />
 
@@ -37,14 +37,14 @@ export default function StatCard({ title, amount, subtitle, icon, trend, color =
           {title}
         </span>
         {icon && (
-          <div className={`flex h-9 w-9 items-center justify-center rounded-xl border ${scheme.badge}`}>
+          <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${scheme.badge}`}>
             {icon}
           </div>
         )}
       </div>
 
-      <div className="mt-3">
-        <div className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white tabular-nums">
+      <div className="mt-3.5">
+        <div className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white tabular-nums">
           {formatVND(amount)}
         </div>
         {subtitle && (
