@@ -29,7 +29,7 @@ async function fetchCsrf() {
   }
 }
 
-async function request(path, { method = "GET", body, retryCsrf = true } = {}) {
+export async function request(path, { method = "GET", body, retryCsrf = true } = {}) {
   const headers = {};
   if (body !== undefined) {
     headers["Content-Type"] = "application/json";
