@@ -1,5 +1,5 @@
 from django.db import connection, transaction
-from django.db.models import Q, Sum
+from django.db.models import Case, IntegerField, Q, Sum, Value, When
 from django.utils.dateparse import parse_date
 from django.utils import timezone
 from rest_framework import filters, generics, pagination, serializers, status
@@ -316,6 +316,185 @@ class BudgetDetailView(generics.DestroyAPIView):
 
     def get_queryset(self):
         return Budget.objects.filter(user=self.request.user)
+
+
+class DashboardView(APIView):
+    def get(self, request):
+        now = timezone.now()
+        try:
+            year = int(request.query_params.get("year", now.year))
+            month = int(request.query_params.get("month", now.month))
+        except (ValueError, TypeError):
+            year, month = now.year, now.month
+
+        import calendar
+        from datetime import date
+        _, last_day = calendar.monthrange(year, month)
+        start_date = date(year, month, 1)
+        end_date = date(year, month, last_day)
+
+        accounts = Account.objects.filter(user=request.user, is_active=True)
+        total_balance = sum(acc.current_balance for acc in accounts)
+
+        month_txs = Transaction.objects.filter(
+            user=request.user,
+            date__gte=start_date,
+            date__lte=end_date,
+        )
+        monthly_income = month_txs.filter(type="income").aggregate(s=Sum("amount"))["s"] or 0
+        monthly_expense = month_txs.filter(type="expense").aggregate(s=Sum("amount"))["s"] or 0
+        monthly_savings = monthly_income - monthly_expense
+
+        monthly_trend = []
+        for i in range(5, -1, -1):
+            m = month - i
+            y = year
+            while m <= 0:
+                m += 12
+                y -= 1
+            _, m_last = calendar.monthrange(y, m)
+            m_start = date(y, m, 1)
+            m_end = date(y, m, m_last)
+
+            tx_m = Transaction.objects.filter(
+                user=request.user,
+                date__gte=m_start,
+                date__lte=m_end,
+            )
+            inc = tx_m.filter(type="income").aggregate(s=Sum("amount"))["s"] or 0
+            exp = tx_m.filter(type="expense").aggregate(s=Sum("amount"))["s"] or 0
+            monthly_trend.append({
+                "year": y,
+                "month": m,
+                "income": inc,
+                "expense": exp,
+                "savings": inc - exp,
+            })
+
+        cat_expenses_qs = (
+            month_txs.filter(type="expense", category__isnull=False)
+            .values("category__id", "category__name", "category__color", "category__icon")
+            .annotate(total=Sum("amount"))
+            .order_by("-total")
+        )
+        category_expenses = []
+        for item in cat_expenses_qs:
+            amount = item["total"]
+            pct = round((amount / monthly_expense * 100), 1) if monthly_expense > 0 else 0.0
+            category_expenses.append({
+                "category_id": str(item["category__id"]),
+                "category_name": item["category__name"],
+                "category_color": item["category__color"],
+                "category_icon": item["category__icon"],
+                "amount": amount,
+                "percentage": pct,
+            })
+
+        recent_txs = (
+            Transaction.objects.filter(user=request.user)
+            .select_related("account", "to_account", "category")
+            .order_by("-date", "-created_at")[:10]
+        )
+        recent_transactions = TransactionSerializer(recent_txs, many=True).data
+
+        budget_view = BudgetView()
+        budget_view.request = request
+        budgets_data = budget_view.get(request).data
+
+        return Response({
+            "year": year,
+            "month": month,
+            "total_balance": total_balance,
+            "monthly_income": monthly_income,
+            "monthly_expense": monthly_expense,
+            "monthly_savings": monthly_savings,
+            "monthly_trend": monthly_trend,
+            "category_expenses": category_expenses,
+            "recent_transactions": recent_transactions,
+            "budget_progress": budgets_data,
+        })
+
+
+class ReportsView(APIView):
+    def get(self, request):
+        now = timezone.now().date()
+        start_str = request.query_params.get("start_date")
+        end_str = request.query_params.get("end_date")
+
+        start_date = parse_date(start_str) if start_str else now.replace(day=1)
+        end_date = parse_date(end_str) if end_str else now
+
+        if not start_date or not end_date:
+            return Response(
+                {"detail": "Ngày không hợp lệ. Định dạng yêu cầu: YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if start_date > end_date:
+            return Response(
+                {"detail": "Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        txs = Transaction.objects.filter(
+            user=request.user,
+            date__gte=start_date,
+            date__lte=end_date,
+        )
+
+        total_income = txs.filter(type="income").aggregate(s=Sum("amount"))["s"] or 0
+        total_expense = txs.filter(type="expense").aggregate(s=Sum("amount"))["s"] or 0
+        net_savings = total_income - total_expense
+
+        cat_breakdown_qs = (
+            txs.exclude(type="transfer")
+            .filter(category__isnull=False)
+            .values("category__id", "category__name", "category__color", "category__icon", "type")
+            .annotate(total=Sum("amount"))
+            .order_by("-total")
+        )
+        category_breakdown = []
+        for item in cat_breakdown_qs:
+            amount = item["total"]
+            base = total_income if item["type"] == "income" else total_expense
+            pct = round((amount / base * 100), 1) if base > 0 else 0.0
+            category_breakdown.append({
+                "category_id": str(item["category__id"]),
+                "category_name": item["category__name"],
+                "category_color": item["category__color"],
+                "category_icon": item["category__icon"],
+                "type": item["type"],
+                "amount": amount,
+                "percentage": pct,
+            })
+
+        daily_qs = (
+            txs.exclude(type="transfer")
+            .values("date")
+            .annotate(
+                income=Sum(Case(When(type="income", then="amount"), default=Value(0), output_field=IntegerField())),
+                expense=Sum(Case(When(type="expense", then="amount"), default=Value(0), output_field=IntegerField())),
+            )
+            .order_by("date")
+        )
+        daily_trend = [
+            {
+                "date": str(row["date"]),
+                "income": row["income"],
+                "expense": row["expense"],
+                "savings": row["income"] - row["expense"],
+            }
+            for row in daily_qs
+        ]
+
+        return Response({
+            "start_date": str(start_date),
+            "end_date": str(end_date),
+            "total_income": total_income,
+            "total_expense": total_expense,
+            "net_savings": net_savings,
+            "category_breakdown": category_breakdown,
+            "daily_trend": daily_trend,
+        })
 
 
 
