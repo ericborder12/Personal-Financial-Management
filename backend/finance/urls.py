@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     AccountDetailView,
     AccountListCreateView,
+    BudgetDetailView,
     BudgetView,
     CategoryDetailView,
     CategoryListCreateView,
@@ -28,6 +29,7 @@ urlpatterns = [
         name="transaction-detail",
     ),
     path("budgets/", BudgetView.as_view(), name="budget-list"),
+    path("budgets/<uuid:pk>/", BudgetDetailView.as_view(), name="budget-detail"),
     path("profile/", ProfileView.as_view(), name="profile"),
     path("import/", ImportView.as_view(), name="import-data"),
 ]

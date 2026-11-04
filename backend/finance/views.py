@@ -224,25 +224,99 @@ class TransactionSummaryView(APIView):
 
 class BudgetView(APIView):
     def get(self, request):
-        budgets = Budget.objects.filter(user=request.user).order_by("category")
-        return Response(BudgetSerializer(budgets, many=True).data)
+        now = timezone.now()
+        try:
+            year = int(request.query_params.get("year", now.year))
+            month = int(request.query_params.get("month", now.month))
+        except (ValueError, TypeError):
+            year, month = now.year, now.month
 
-    def put(self, request):
-        serializer = BudgetSerializer(data=request.data, many=True)
-        serializer.is_valid(raise_exception=True)
-        items = serializer.validated_data
-        categories = [item["category"] for item in items]
-        if len(categories) != len(set(categories)):
-            return Response(
-                {"detail": "Danh mục bị trùng."}, status=status.HTTP_400_BAD_REQUEST
+        import calendar
+        from datetime import date
+        _, last_day = calendar.monthrange(year, month)
+        start_date = date(year, month, 1)
+        end_date = date(year, month, last_day)
+
+        categories = Category.objects.filter(user=request.user, type="expense", is_active=True).order_by("name")
+        budgets_map = {
+            b.category_id: b for b in Budget.objects.filter(user=request.user, year=year, month=month)
+        }
+
+        spent_map = dict(
+            Transaction.objects.filter(
+                user=request.user,
+                type="expense",
+                date__gte=start_date,
+                date__lte=end_date,
+                category__isnull=False,
             )
-        with transaction.atomic():
-            Budget.objects.filter(user=request.user).delete()
-            Budget.objects.bulk_create(
-                [Budget(user=request.user, **item) for item in items]
-            )
-        budgets = Budget.objects.filter(user=request.user).order_by("category")
-        return Response(BudgetSerializer(budgets, many=True).data)
+            .values("category_id")
+            .annotate(total=Sum("amount"))
+            .values_list("category_id", "total")
+        )
+
+        results = []
+        for cat in categories:
+            budget = budgets_map.get(cat.id)
+            limit = budget.limit if budget else 0
+            spent = spent_map.get(cat.id, 0)
+            percentage = round((spent / limit * 100), 1) if limit > 0 else 0.0
+            if limit > 0 and percentage >= 100:
+                b_status = "danger"
+            elif limit > 0 and percentage >= 80:
+                b_status = "warning"
+            else:
+                b_status = "safe"
+
+            results.append({
+                "id": str(budget.id) if budget else None,
+                "category_id": str(cat.id),
+                "category_name": cat.name,
+                "category_icon": cat.icon,
+                "category_color": cat.color,
+                "limit": limit,
+                "spent": spent,
+                "remaining": max(0, limit - spent) if limit > 0 else 0,
+                "percentage": percentage,
+                "status": b_status,
+                "year": year,
+                "month": month,
+            })
+
+        return Response(results)
+
+    def post(self, request):
+        category_id = request.data.get("category")
+        limit = request.data.get("limit")
+        year = request.data.get("year", timezone.now().year)
+        month = request.data.get("month", timezone.now().month)
+
+        if not category_id:
+            return Response({"category": "Danh mục là bắt buộc."}, status=status.HTTP_400_BAD_REQUEST)
+        if limit is None or int(limit) < 0:
+            return Response({"limit": "Hạn mức không hợp lệ."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            category = Category.objects.get(id=category_id, user=request.user)
+        except (Category.DoesNotExist, ValueError):
+            return Response({"category": "Danh mục không tồn tại."}, status=status.HTTP_400_BAD_REQUEST)
+
+        budget, created = Budget.objects.update_or_create(
+            user=request.user,
+            category=category,
+            year=year,
+            month=month,
+            defaults={"limit": limit},
+        )
+        return Response(BudgetSerializer(budget).data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+class BudgetDetailView(generics.DestroyAPIView):
+    serializer_class = BudgetSerializer
+
+    def get_queryset(self):
+        return Budget.objects.filter(user=self.request.user)
+
 
 
 class ProfileView(APIView):

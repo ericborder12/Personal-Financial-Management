@@ -122,10 +122,28 @@ class TransactionSerializer(serializers.ModelSerializer):
 
 class BudgetSerializer(serializers.ModelSerializer):
     limit = StrictIntegerField(min_value=0, max_value=MAX_AMOUNT)
+    category_id = serializers.UUIDField(source="category.id", read_only=True)
+    category_name = serializers.CharField(source="category.name", read_only=True)
+    category_icon = serializers.CharField(source="category.icon", read_only=True)
+    category_color = serializers.CharField(source="category.color", read_only=True)
 
     class Meta:
         model = Budget
-        fields = ["category", "limit", "fixed"]
+        fields = [
+            "id",
+            "category",
+            "category_id",
+            "category_name",
+            "category_icon",
+            "category_color",
+            "limit",
+            "year",
+            "month",
+            "fixed",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
 
 
 class ProfileSerializer(serializers.ModelSerializer):

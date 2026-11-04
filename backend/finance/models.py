@@ -3,6 +3,7 @@ import uuid
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 
 class Profile(models.Model):
@@ -30,7 +31,7 @@ class Account(models.Model):
     color = models.CharField(max_length=20, default="#2563EB")
     icon = models.CharField(max_length=50, default="wallet")
     is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         ordering = ["created_at"]
@@ -74,7 +75,7 @@ class Category(models.Model):
     color = models.CharField(max_length=20, default="#64748B")
     is_default = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         ordering = ["type", "name"]
@@ -123,7 +124,7 @@ class Transaction(models.Model):
     )
     date = models.DateField()
     note = models.CharField(max_length=255, blank=True, default="")
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         indexes = [
@@ -158,15 +159,24 @@ class Transaction(models.Model):
 
 
 class Budget(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="budgets")
-    category = models.CharField(max_length=50)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="budgets", null=True, blank=True)
     limit = models.BigIntegerField()
+    year = models.IntegerField(default=2026)
+    month = models.IntegerField(default=1)
     fixed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["user", "category"], name="unique_budget_per_user_category")
+            models.UniqueConstraint(fields=["user", "category", "year", "month"], name="unique_budget_per_user_cat_year_month")
+        ]
+        indexes = [
+            models.Index(fields=["user", "year", "month"]),
         ]
 
     def __str__(self):
-        return f"{self.category}: {self.limit}/{self.user_id}"
+        cat_name = self.category.name if self.category else "All"
+        return f"{cat_name}: {self.limit} ({self.month}/{self.year})"
+
