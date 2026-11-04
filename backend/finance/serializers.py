@@ -55,11 +55,69 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class TransactionSerializer(serializers.ModelSerializer):
     amount = StrictIntegerField(min_value=1, max_value=MAX_AMOUNT)
+    account_name = serializers.CharField(source="account.name", read_only=True)
+    to_account_name = serializers.CharField(source="to_account.name", read_only=True)
+    category_name = serializers.CharField(source="category.name", read_only=True)
+    category_icon = serializers.CharField(source="category.icon", read_only=True)
+    category_color = serializers.CharField(source="category.color", read_only=True)
 
     class Meta:
         model = Transaction
-        fields = ["id", "type", "amount", "category", "date", "note", "created_at"]
-        read_only_fields = ["id", "created_at"]
+        fields = [
+            "id",
+            "type",
+            "amount",
+            "account",
+            "account_name",
+            "to_account",
+            "to_account_name",
+            "category",
+            "category_name",
+            "category_icon",
+            "category_color",
+            "date",
+            "note",
+            "created_at",
+        ]
+        read_only_fields = [
+            "id",
+            "account_name",
+            "to_account_name",
+            "category_name",
+            "category_icon",
+            "category_color",
+            "created_at",
+        ]
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        user = request.user if request else None
+
+        tx_type = attrs.get("type", getattr(self.instance, "type", None))
+        account = attrs.get("account", getattr(self.instance, "account", None))
+        to_account = attrs.get("to_account", getattr(self.instance, "to_account", None))
+        category = attrs.get("category", getattr(self.instance, "category", None))
+
+        if user:
+            if account and account.user != user:
+                raise serializers.ValidationError({"account": "Tài khoản không hợp lệ."})
+            if to_account and to_account.user != user:
+                raise serializers.ValidationError({"to_account": "Tài khoản đích không hợp lệ."})
+            if category and category.user != user:
+                raise serializers.ValidationError({"category": "Danh mục không hợp lệ."})
+
+        if tx_type == "transfer":
+            if not account:
+                raise serializers.ValidationError({"account": "Tài khoản nguồn là bắt buộc khi chuyển tiền."})
+            if not to_account:
+                raise serializers.ValidationError({"to_account": "Tài khoản đích là bắt buộc khi chuyển tiền."})
+            if account == to_account:
+                raise serializers.ValidationError({"to_account": "Tài khoản nguồn và đích phải khác nhau."})
+        elif tx_type in ("income", "expense"):
+            if not account:
+                raise serializers.ValidationError({"account": "Vui lòng chọn tài khoản giao dịch."})
+
+        return attrs
 
 
 class BudgetSerializer(serializers.ModelSerializer):

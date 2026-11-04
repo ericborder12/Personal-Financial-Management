@@ -97,12 +97,12 @@ class TransactionListCreateView(generics.ListCreateAPIView):
     serializer_class = TransactionSerializer
     pagination_class = TransactionPagination
     filter_backends = [filters.SearchFilter, StableOrderingFilter]
-    search_fields = ["category", "note"]
-    ordering_fields = ["date", "category", "amount"]
+    search_fields = ["category__name", "note"]
+    ordering_fields = ["date", "amount"]
     ordering = ["-date", "-created_at"]
 
     def get_queryset(self):
-        queryset = Transaction.objects.filter(user=self.request.user)
+        queryset = Transaction.objects.filter(user=self.request.user).select_related("account", "to_account", "category")
         params = TransactionQuerySerializer(data=self.request.query_params)
         params.is_valid(raise_exception=True)
         values = params.validated_data
@@ -111,7 +111,16 @@ class TransactionListCreateView(generics.ListCreateAPIView):
         if "end_date" in values:
             queryset = queryset.filter(date__lte=values["end_date"])
         if "category" in values:
-            queryset = queryset.filter(category=values["category"])
+            cat_val = values["category"]
+            try:
+                import uuid
+                uuid.UUID(str(cat_val))
+                queryset = queryset.filter(category_id=cat_val)
+            except ValueError:
+                queryset = queryset.filter(category__name=cat_val)
+        if "account" in values:
+            acc_val = values["account"]
+            queryset = queryset.filter(Q(account_id=acc_val) | Q(to_account_id=acc_val))
         if "type" in values:
             queryset = queryset.filter(type=values["type"])
         if "min_amount" in values:
@@ -124,20 +133,22 @@ class TransactionListCreateView(generics.ListCreateAPIView):
         serializer.save(user=self.request.user)
 
 
-class TransactionDetailView(generics.DestroyAPIView):
+class TransactionDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TransactionSerializer
 
     def get_queryset(self):
-        return Transaction.objects.filter(user=self.request.user)
+        return Transaction.objects.filter(user=self.request.user).select_related("account", "to_account", "category")
 
 
 class TransactionQuerySerializer(serializers.Serializer):
     start_date = serializers.DateField(required=False)
     end_date = serializers.DateField(required=False)
-    category = serializers.CharField(required=False, max_length=50)
+    category = serializers.CharField(required=False)
+    account = serializers.UUIDField(required=False)
     type = serializers.ChoiceField(required=False, choices=Transaction.TYPE_CHOICES)
     min_amount = serializers.IntegerField(required=False, min_value=1)
     max_amount = serializers.IntegerField(required=False, min_value=1)
+
 
     def validate(self, attrs):
         if (
