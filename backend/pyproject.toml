@@ -1,2 +1,16 @@
+[project]
+name = "personal-financial-backend"
+version = "0.1.0"
+description = "Personal Finance Management Backend"
+requires-python = ">=3.12"
+dependencies = [
+    "Django>=5.2,<5.3",
+    "djangorestframework>=3.15,<4",
+    "psycopg[binary]>=3.2,<4",
+    "dj-database-url>=2.2,<3",
+    "django-cors-headers>=4.4,<5",
+    "python-dotenv>=1.0,<2",
+]
+
 [tool.vercel]
 entrypoint = "config.wsgi:application"
