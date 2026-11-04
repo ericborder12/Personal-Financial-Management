@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Budget, Profile, Transaction
+from .models import Account, Budget, Category, Profile, Transaction
 
 MAX_AMOUNT = 9223372036854775807
 
@@ -12,6 +12,45 @@ class StrictIntegerField(serializers.IntegerField):
         if isinstance(data, bool) or isinstance(data, float):
             self.fail("invalid")
         return super().to_internal_value(data)
+
+
+class AccountSerializer(serializers.ModelSerializer):
+    current_balance = serializers.IntegerField(read_only=True)
+    initial_balance = StrictIntegerField(min_value=0, max_value=MAX_AMOUNT, default=0, required=False)
+    is_active = serializers.BooleanField(default=True, required=False)
+
+    class Meta:
+        model = Account
+        fields = [
+            "id",
+            "name",
+            "type",
+            "initial_balance",
+            "current_balance",
+            "color",
+            "icon",
+            "is_active",
+            "created_at",
+        ]
+        read_only_fields = ["id", "current_balance", "created_at"]
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    is_active = serializers.BooleanField(default=True, required=False)
+
+    class Meta:
+        model = Category
+        fields = [
+            "id",
+            "name",
+            "type",
+            "icon",
+            "color",
+            "is_default",
+            "is_active",
+            "created_at",
+        ]
+        read_only_fields = ["id", "is_default", "created_at"]
 
 
 class TransactionSerializer(serializers.ModelSerializer):

@@ -7,13 +7,62 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Budget, Profile, Transaction
+from .models import Account, Budget, Category, Profile, Transaction
 from .serializers import (
+    AccountSerializer,
     BudgetSerializer,
+    CategorySerializer,
     ImportSerializer,
     ProfileSerializer,
     TransactionSerializer,
 )
+
+
+class AccountListCreateView(generics.ListCreateAPIView):
+    serializer_class = AccountSerializer
+
+    def get_queryset(self):
+        return Account.objects.filter(user=self.request.user, is_active=True).order_by("created_at")
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class AccountDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = AccountSerializer
+
+    def get_queryset(self):
+        return Account.objects.filter(user=self.request.user)
+
+    def perform_destroy(self, instance):
+        instance.is_active = False
+        instance.save()
+
+
+class CategoryListCreateView(generics.ListCreateAPIView):
+    serializer_class = CategorySerializer
+
+    def get_queryset(self):
+        qs = Category.objects.filter(user=self.request.user, is_active=True)
+        cat_type = self.request.query_params.get("type")
+        if cat_type in ("income", "expense"):
+            qs = qs.filter(type=cat_type)
+        return qs.order_by("type", "name")
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = CategorySerializer
+
+    def get_queryset(self):
+        return Category.objects.filter(user=self.request.user)
+
+    def perform_destroy(self, instance):
+        instance.is_active = False
+        instance.save()
+
 
 
 def get_profile(user):
