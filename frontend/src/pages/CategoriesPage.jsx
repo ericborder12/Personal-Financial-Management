@@ -147,11 +147,11 @@ export default function CategoriesPage() {
                   style={{ backgroundColor: cat.color || "#3B82F6" }}
                 />
                 <div className="min-w-0">
-                  <span className="font-bold text-slate-900 dark:text-white text-sm truncate block">
+                  <span className="font-bold text-slate-900 dark:text-white text-base truncate block">
                     {cat.name}
                   </span>
                   {cat.is_default && (
-                    <span className="mt-0.5 inline-block rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                    <span className="mt-0.5 inline-block rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                       Mặc định
                     </span>
                   )}

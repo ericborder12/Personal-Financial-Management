@@ -43,28 +43,28 @@ export default function BudgetCard({ budget, onEdit, onDelete }) {
               className="h-3.5 w-3.5 rounded-md shadow-2xs"
               style={{ backgroundColor: budget.category_color || "#3B82F6" }}
             />
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white my-0 truncate">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white my-0 truncate">
               {budget.category_name}
             </h3>
           </div>
           {budget.limit > 0 && getStatusBadge()}
         </div>
 
-        <div className="mt-4 space-y-1.5 tabular-nums">
+        <div className="mt-4 space-y-2 tabular-nums">
           <div className="flex items-baseline justify-between">
-            <span className="text-xs text-slate-400 font-medium">Đã chi</span>
-            <span className="text-lg font-extrabold text-slate-900 dark:text-white">
+            <span className="text-xs sm:text-sm text-slate-400 font-medium">Đã chi</span>
+            <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
               {formatVND(budget.spent)}
             </span>
           </div>
-          <div className="flex items-baseline justify-between text-xs">
+          <div className="flex items-baseline justify-between text-xs sm:text-sm">
             <span className="text-slate-400 font-medium">Hạn mức</span>
             <span className="font-semibold text-slate-600 dark:text-slate-300">
               {budget.limit > 0 ? formatVND(budget.limit) : "Chưa đặt"}
             </span>
           </div>
           {budget.limit > 0 && (
-            <div className="flex items-baseline justify-between text-xs">
+            <div className="flex items-baseline justify-between text-xs sm:text-sm">
               <span className="text-slate-400 font-medium">Còn lại</span>
               <span
                 className={`font-bold ${
@@ -81,7 +81,7 @@ export default function BudgetCard({ budget, onEdit, onDelete }) {
 
         {/* Progress Bar */}
         {budget.limit > 0 && (
-          <div className="mt-3.5 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+          <div className="mt-3.5 h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
             <div
               className={`h-full rounded-full transition-all duration-500 ${getBarColor()}`}
               style={{ width: `${progressWidth}%` }}

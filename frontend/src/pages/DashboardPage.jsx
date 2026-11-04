@@ -8,7 +8,6 @@ import {
   IconAccounts,
   IconArrowUpRight,
   IconArrowDownRight,
-  IconPlus,
   IconChevronLeft,
   IconChevronRight,
   IconSparkles,
@@ -121,14 +120,11 @@ export default function DashboardPage({ onOpenQuickTransaction, setActiveTab }) 
           )}
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onOpenQuickTransaction}
-            className="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-blue-500/20 hover:bg-blue-700 active:scale-[0.98] transition-all"
-          >
-            <IconPlus className="w-4 h-4" />
-            <span>Thêm giao dịch</span>
-          </button>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-300">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            Đồng bộ thời gian thực
+          </span>
         </div>
       </div>
 
@@ -171,10 +167,10 @@ export default function DashboardPage({ onOpenQuickTransaction, setActiveTab }) 
           {/* Category Breakdown */}
           <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white my-0">
                 Phân bổ chi tiêu tháng {selectedMonth}
               </h2>
-              <span className="text-xs font-semibold text-slate-400">
+              <span className="text-xs sm:text-sm font-semibold text-slate-400">
                 {category_expenses.length} danh mục
               </span>
             </div>
@@ -189,7 +185,7 @@ export default function DashboardPage({ onOpenQuickTransaction, setActiveTab }) 
           {/* 6-Month Trend Overview */}
           <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white my-0">
                 Biến động thu chi 6 tháng gần nhất
               </h2>
             </div>
@@ -200,35 +196,35 @@ export default function DashboardPage({ onOpenQuickTransaction, setActiveTab }) 
                     ...monthly_trend.map((t) => Math.max(t.income, t.expense)),
                     1
                   );
-                  const incomeH = Math.round((m.income / maxVal) * 85);
-                  const expenseH = Math.round((m.expense / maxVal) * 85);
+                  const incomeH = Math.round((m.income / maxVal) * 100);
+                  const expenseH = Math.round((m.expense / maxVal) * 100);
 
                   return (
                     <div key={idx} className="flex flex-col items-center text-center">
-                      <div className="flex h-24 w-full items-end justify-center gap-1.5 pb-2">
+                      <div className="flex h-28 w-full items-end justify-center gap-2 pb-2">
                         <div
-                          className="w-3 rounded-t-sm bg-emerald-500 transition-all duration-300 hover:opacity-80"
+                          className="w-3.5 rounded-t-sm bg-emerald-500 transition-all duration-300 hover:opacity-80"
                           style={{ height: `${Math.max(incomeH, 4)}px` }}
                           title={`Thu nhập: ${formatVND(m.income)}`}
                         />
                         <div
-                          className="w-3 rounded-t-sm bg-rose-500 transition-all duration-300 hover:opacity-80"
+                          className="w-3.5 rounded-t-sm bg-rose-500 transition-all duration-300 hover:opacity-80"
                           style={{ height: `${Math.max(expenseH, 4)}px` }}
                           title={`Chi tiêu: ${formatVND(m.expense)}`}
                         />
                       </div>
-                      <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                      <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">
                         T{m.month}
                       </span>
                     </div>
                   );
                 })}
               </div>
-              <div className="mt-4 flex items-center justify-center gap-6 text-xs text-slate-500 border-t border-slate-100 dark:border-slate-800 pt-3">
-                <span className="flex items-center gap-1.5 font-medium">
+              <div className="mt-4 flex items-center justify-center gap-6 text-xs sm:text-sm text-slate-500 border-t border-slate-100 dark:border-slate-800 pt-3">
+                <span className="flex items-center gap-1.5 font-semibold">
                   <span className="h-2.5 w-2.5 rounded-xs bg-emerald-500" /> Thu nhập
                 </span>
-                <span className="flex items-center gap-1.5 font-medium">
+                <span className="flex items-center gap-1.5 font-semibold">
                   <span className="h-2.5 w-2.5 rounded-xs bg-rose-500" /> Chi tiêu
                 </span>
               </div>
@@ -241,12 +237,12 @@ export default function DashboardPage({ onOpenQuickTransaction, setActiveTab }) 
           {/* Budget Progress */}
           <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white my-0">
                 Tiến độ ngân sách tháng {selectedMonth}
               </h2>
               <button
                 onClick={() => setActiveTab("budgets")}
-                className="cursor-pointer text-xs font-bold text-blue-600 hover:underline dark:text-blue-400"
+                className="cursor-pointer text-xs sm:text-sm font-bold text-blue-600 hover:underline dark:text-blue-400"
               >
                 Chi tiết →
               </button>
@@ -262,19 +258,27 @@ export default function DashboardPage({ onOpenQuickTransaction, setActiveTab }) 
           {/* Recent Transactions */}
           <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white my-0">
                 Giao dịch gần đây
               </h2>
-              <button
-                onClick={() => setActiveTab("transactions")}
-                className="cursor-pointer text-xs font-bold text-blue-600 hover:underline dark:text-blue-400"
-              >
-                Tất cả →
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={onOpenQuickTransaction}
+                  className="cursor-pointer text-xs sm:text-sm font-bold text-blue-600 hover:underline dark:text-blue-400"
+                >
+                  + Thêm
+                </button>
+                <button
+                  onClick={() => setActiveTab("transactions")}
+                  className="cursor-pointer text-xs sm:text-sm font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                >
+                  Tất cả →
+                </button>
+              </div>
             </div>
             <div className="pt-2 divide-y divide-slate-100 dark:divide-slate-800">
               {recent_transactions.length === 0 ? (
-                <p className="py-8 text-center text-xs text-slate-400">
+                <p className="py-8 text-center text-xs sm:text-sm text-slate-400">
                   Chưa có giao dịch nào được ghi nhận.
                 </p>
               ) : (
@@ -285,11 +289,11 @@ export default function DashboardPage({ onOpenQuickTransaction, setActiveTab }) 
                   return (
                     <div
                       key={tx.id}
-                      className="flex items-center justify-between py-2.5 text-xs transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40 px-1 rounded-lg"
+                      className="flex items-center justify-between py-3 px-2 text-xs sm:text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-xl"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-3.5 min-w-0">
                         <div
-                          className={`flex h-8 w-8 items-center justify-center rounded-lg font-bold shrink-0 ${
+                          className={`flex h-9 w-9 items-center justify-center rounded-xl font-black text-sm shrink-0 ${
                             isIncome
                               ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50"
                               : isTransfer
@@ -300,12 +304,12 @@ export default function DashboardPage({ onOpenQuickTransaction, setActiveTab }) 
                           {isIncome ? "+" : isTransfer ? "⇄" : "-"}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-bold text-slate-800 dark:text-slate-200 truncate">
+                          <p className="font-bold text-slate-900 dark:text-white truncate text-sm sm:text-base">
                             {isTransfer
                               ? `${tx.account_name} → ${tx.to_account_name}`
                               : tx.category_name || "Chưa phân loại"}
                           </p>
-                          <p className="text-[11px] text-slate-400">
+                          <p className="text-xs font-medium text-slate-400 mt-0.5">
                             {formatDate(tx.date)} {tx.note ? `• ${tx.note}` : ""}
                           </p>
                         </div>
@@ -313,7 +317,7 @@ export default function DashboardPage({ onOpenQuickTransaction, setActiveTab }) 
 
                       <div className="shrink-0 text-right tabular-nums">
                         <span
-                          className={`font-bold ${
+                          className={`text-sm sm:text-base font-black ${
                             isIncome
                               ? "text-emerald-600 dark:text-emerald-400"
                               : isTransfer

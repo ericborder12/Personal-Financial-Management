@@ -61,13 +61,13 @@ export default function AccountCard({ account, onEdit, onDelete, onTransferFrom 
         </div>
 
         <div className="mt-4">
-          <h3 className="text-base font-bold text-slate-900 dark:text-white my-0 truncate">
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white my-0 truncate">
             {account.name}
           </h3>
-          <div className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white tabular-nums">
+          <div className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white tabular-nums">
             {formatVND(account.current_balance)}
           </div>
-          <p className="mt-1 text-xs text-slate-400 tabular-nums">
+          <p className="mt-1 text-xs sm:text-sm text-slate-400 tabular-nums font-medium">
             Số dư ban đầu: {formatVND(account.initial_balance)}
           </p>
         </div>

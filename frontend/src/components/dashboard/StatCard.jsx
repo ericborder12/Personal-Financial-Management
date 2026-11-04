@@ -33,7 +33,7 @@ export default function StatCard({ title, amount, subtitle, icon, trend, color =
       <div className={`absolute top-0 left-0 right-0 h-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${scheme.accent}`} />
 
       <div className="flex items-center justify-between">
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
           {title}
         </span>
         {icon && (
@@ -48,7 +48,7 @@ export default function StatCard({ title, amount, subtitle, icon, trend, color =
           {formatVND(amount)}
         </div>
         {subtitle && (
-          <div className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+          <div className="mt-1.5 flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
             {trend && <span className={`font-semibold ${scheme.text}`}>{trend}</span>}
             <span>{subtitle}</span>
           </div>

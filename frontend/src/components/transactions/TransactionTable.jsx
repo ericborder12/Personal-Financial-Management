@@ -40,8 +40,8 @@ export default function TransactionTable({
   return (
     <div className="rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900 overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead className="border-b border-slate-100 bg-slate-50/75 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
+        <table className="w-full text-left text-sm">
+          <thead className="border-b border-slate-100 bg-slate-50/75 text-xs font-bold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
             <tr>
               <th className="py-3.5 pl-6 pr-3">Ngày</th>
               <th className="px-3 py-3.5">Phân loại & Danh mục</th>
@@ -62,15 +62,15 @@ export default function TransactionTable({
                   className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40"
                 >
                   {/* Date */}
-                  <td className="py-3.5 pl-6 pr-3 whitespace-nowrap font-medium text-slate-500 dark:text-slate-400 tabular-nums">
+                  <td className="py-3.5 pl-6 pr-3 whitespace-nowrap font-medium text-slate-500 dark:text-slate-400 tabular-nums text-sm">
                     {formatDate(tx.date)}
                   </td>
 
                   {/* Category & Badge */}
                   <td className="px-3 py-3.5">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5">
                       <span
-                        className={`inline-flex items-center justify-center rounded-md px-2 py-0.5 text-[10px] font-bold ${
+                        className={`inline-flex items-center justify-center rounded-md px-2.5 py-0.5 text-xs font-bold ${
                           isIncome
                             ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/40"
                             : isTransfer
@@ -80,7 +80,7 @@ export default function TransactionTable({
                       >
                         {isIncome ? "Thu nhập" : isTransfer ? "Chuyển tiền" : "Chi tiêu"}
                       </span>
-                      <span className="font-bold text-slate-900 dark:text-white truncate max-w-[140px]">
+                      <span className="font-bold text-slate-900 dark:text-white truncate max-w-[160px] text-sm sm:text-base">
                         {isTransfer
                           ? "Nội bộ"
                           : tx.category_name || "Chưa phân loại"}
@@ -89,7 +89,7 @@ export default function TransactionTable({
                   </td>
 
                   {/* Account */}
-                  <td className="px-3 py-3.5 whitespace-nowrap text-slate-600 dark:text-slate-300">
+                  <td className="px-3 py-3.5 whitespace-nowrap text-slate-600 dark:text-slate-300 text-sm">
                     {isTransfer ? (
                       <span className="font-semibold text-purple-600 dark:text-purple-400">
                         {tx.account_name} → {tx.to_account_name}
@@ -100,14 +100,14 @@ export default function TransactionTable({
                   </td>
 
                   {/* Note */}
-                  <td className="px-3 py-3.5 text-slate-500 dark:text-slate-400 max-w-xs truncate">
+                  <td className="px-3 py-3.5 text-slate-500 dark:text-slate-400 max-w-xs truncate text-sm">
                     {tx.note || "—"}
                   </td>
 
                   {/* Amount */}
                   <td className="px-3 py-3.5 whitespace-nowrap text-right tabular-nums">
                     <span
-                      className={`text-sm font-extrabold ${
+                      className={`text-sm sm:text-base font-black ${
                         isIncome
                           ? "text-emerald-600 dark:text-emerald-400"
                           : isTransfer

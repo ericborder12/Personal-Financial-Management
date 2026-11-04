@@ -135,29 +135,29 @@ export default function ReportsPage() {
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
         <div className="group rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+          <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Tổng thu nhập
           </span>
-          <div className="mt-2 text-3xl sm:text-4xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
+          <div className="mt-2 text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
             +{formatVND(total_income)}
           </div>
         </div>
 
         <div className="group rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+          <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Tổng chi tiêu
           </span>
-          <div className="mt-2 text-3xl sm:text-4xl font-black text-rose-600 dark:text-rose-400 tabular-nums">
+          <div className="mt-2 text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400 tabular-nums">
             -{formatVND(total_expense)}
           </div>
         </div>
 
         <div className="group rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+          <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Thặng dư / Tiết kiệm ròng
           </span>
           <div
-            className={`mt-2 text-3xl sm:text-4xl font-black tabular-nums ${
+            className={`mt-2 text-2xl sm:text-3xl font-black tabular-nums ${
               net_savings >= 0
                 ? "text-blue-600 dark:text-blue-400"
                 : "text-rose-600 dark:text-rose-400"
@@ -172,26 +172,26 @@ export default function ReportsPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Expense Breakdown */}
         <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 pb-3 border-b border-slate-100 dark:border-slate-800 my-0">
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white pb-3 border-b border-slate-100 dark:border-slate-800 my-0">
             Cơ cấu chi tiêu ({formatVND(total_expense)})
           </h3>
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 space-y-4">
             {expenseBreakdown.length === 0 ? (
-              <p className="text-xs text-slate-400 py-6 text-center">
+              <p className="text-sm font-medium text-slate-400 py-8 text-center">
                 Không có dữ liệu chi tiêu trong giai đoạn này.
               </p>
             ) : (
               expenseBreakdown.map((cat) => (
-                <div key={cat.category_id} className="space-y-1 text-xs">
-                  <div className="flex justify-between">
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">
+                <div key={cat.category_id} className="space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-200">
                       {cat.category_name}
                     </span>
-                    <span className="font-bold text-slate-900 dark:text-white tabular-nums">
+                    <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white tabular-nums">
                       {formatVND(cat.amount)} ({cat.percentage}%)
                     </span>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div className="h-2.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                     <div
                       className="h-full rounded-full bg-rose-500 transition-all duration-500"
                       style={{ width: `${cat.percentage}%` }}
@@ -205,26 +205,26 @@ export default function ReportsPage() {
 
         {/* Income Breakdown */}
         <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 pb-3 border-b border-slate-100 dark:border-slate-800 my-0">
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white pb-3 border-b border-slate-100 dark:border-slate-800 my-0">
             Nguồn thu nhập ({formatVND(total_income)})
           </h3>
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 space-y-4">
             {incomeBreakdown.length === 0 ? (
-              <p className="text-xs text-slate-400 py-6 text-center">
+              <p className="text-sm font-medium text-slate-400 py-8 text-center">
                 Không có dữ liệu thu nhập trong giai đoạn này.
               </p>
             ) : (
               incomeBreakdown.map((cat) => (
-                <div key={cat.category_id} className="space-y-1 text-xs">
-                  <div className="flex justify-between">
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">
+                <div key={cat.category_id} className="space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-200">
                       {cat.category_name}
                     </span>
-                    <span className="font-bold text-slate-900 dark:text-white tabular-nums">
+                    <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white tabular-nums">
                       {formatVND(cat.amount)} ({cat.percentage}%)
                     </span>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div className="h-2.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                     <div
                       className="h-full rounded-full bg-emerald-500 transition-all duration-500"
                       style={{ width: `${cat.percentage}%` }}
@@ -240,32 +240,32 @@ export default function ReportsPage() {
       {/* Daily Cashflow Trend */}
       {daily_trend.length > 0 && (
         <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 pb-3 border-b border-slate-100 dark:border-slate-800 my-0">
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white pb-3 border-b border-slate-100 dark:border-slate-800 my-0">
             Chi tiết biến động dòng tiền theo ngày
           </h3>
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-100 bg-slate-50/75 dark:border-slate-800 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-bold tracking-wider">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-slate-100 bg-slate-50/75 dark:border-slate-800 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 uppercase text-xs font-bold tracking-wider">
                 <tr>
-                  <th className="py-2.5 px-3">Ngày</th>
-                  <th className="py-2.5 px-3 text-right">Thu nhập</th>
-                  <th className="py-2.5 px-3 text-right">Chi tiêu</th>
-                  <th className="py-2.5 px-3 text-right">Chênh lệch</th>
+                  <th className="py-3 px-4">Ngày</th>
+                  <th className="py-3 px-4 text-right">Thu nhập</th>
+                  <th className="py-3 px-4 text-right">Chi tiêu</th>
+                  <th className="py-3 px-4 text-right">Chênh lệch</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 tabular-nums">
                 {daily_trend.map((row) => (
                   <tr key={row.date} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                    <td className="py-2.5 px-3 font-semibold text-slate-600 dark:text-slate-300">
+                    <td className="py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
                       {formatDate(row.date)}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-bold text-emerald-600 dark:text-emerald-400">
+                    <td className="py-3 px-4 text-right font-black text-emerald-600 dark:text-emerald-400 text-sm sm:text-base">
                       {row.income > 0 ? `+${formatVND(row.income)}` : "—"}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-bold text-rose-600 dark:text-rose-400">
+                    <td className="py-3 px-4 text-right font-black text-rose-600 dark:text-rose-400 text-sm sm:text-base">
                       {row.expense > 0 ? `-${formatVND(row.expense)}` : "—"}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-extrabold text-slate-900 dark:text-white">
+                    <td className="py-3 px-4 text-right font-black text-slate-900 dark:text-white text-sm sm:text-base">
                       {formatVND(row.savings)}
                     </td>
                   </tr>
