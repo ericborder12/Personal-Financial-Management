@@ -9,6 +9,7 @@ export default function ReportsPage() {
 
   const [startDate, setStartDate] = useState(firstDayOfMonth);
   const [endDate, setEndDate] = useState(today);
+  const [activePreset, setActivePreset] = useState("this_month");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -31,6 +32,7 @@ export default function ReportsPage() {
   }, [fetchReports]);
 
   const setPreset = (type) => {
+    setActivePreset(type);
     const cur = new Date();
     if (type === "this_month") {
       setStartDate(new Date(cur.getFullYear(), cur.getMonth(), 1).toLocaleDateString("sv-SE"));
@@ -66,24 +68,36 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6">
       {/* Date Filter Bar & Presets */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold text-slate-500">Khoảng thời gian:</span>
+          <span className="text-xs font-bold text-slate-500">Khoảng thời gian:</span>
           <button
             onClick={() => setPreset("this_month")}
-            className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+            className={`cursor-pointer rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+              activePreset === "this_month"
+                ? "bg-slate-900 text-white dark:bg-blue-600 shadow-2xs"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+            }`}
           >
             Tháng này
           </button>
           <button
             onClick={() => setPreset("last_3_months")}
-            className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+            className={`cursor-pointer rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+              activePreset === "last_3_months"
+                ? "bg-slate-900 text-white dark:bg-blue-600 shadow-2xs"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+            }`}
           >
             3 tháng gần nhất
           </button>
           <button
             onClick={() => setPreset("this_year")}
-            className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+            className={`cursor-pointer rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+              activePreset === "this_year"
+                ? "bg-slate-900 text-white dark:bg-blue-600 shadow-2xs"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+            }`}
           >
             Năm nay
           </button>
@@ -93,51 +107,57 @@ export default function ReportsPage() {
           <input
             type="date"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="rounded-xl border border-slate-200 px-3 py-1.5 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            onChange={(e) => {
+              setActivePreset("custom");
+              setStartDate(e.target.value);
+            }}
+            className="rounded-xl border border-slate-200/90 px-3 py-1.5 font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           />
-          <span className="text-slate-400">đến</span>
+          <span className="text-slate-400 font-semibold">đến</span>
           <input
             type="date"
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="rounded-xl border border-slate-200 px-3 py-1.5 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            onChange={(e) => {
+              setActivePreset("custom");
+              setEndDate(e.target.value);
+            }}
+            className="rounded-xl border border-slate-200/90 px-3 py-1.5 font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           />
         </div>
       </div>
 
       {error && (
-        <div className="rounded-xl bg-rose-50 p-4 text-xs font-semibold text-rose-600 dark:bg-rose-950/40">
+        <div className="rounded-xl bg-rose-50 p-4 text-xs font-semibold text-rose-600 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50">
           {error.message}
         </div>
       )}
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
             Tổng thu nhập
           </span>
-          <div className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+          <div className="mt-2 text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 tabular-nums">
             +{formatVND(total_income)}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
             Tổng chi tiêu
           </span>
-          <div className="mt-2 text-2xl font-bold text-rose-600 dark:text-rose-400">
+          <div className="mt-2 text-2xl font-extrabold text-rose-600 dark:text-rose-400 tabular-nums">
             -{formatVND(total_expense)}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
             Thặng dư / Tiết kiệm ròng
           </span>
           <div
-            className={`mt-2 text-2xl font-bold ${
+            className={`mt-2 text-2xl font-extrabold tabular-nums ${
               net_savings >= 0
                 ? "text-blue-600 dark:text-blue-400"
                 : "text-rose-600 dark:text-rose-400"
@@ -151,14 +171,14 @@ export default function ReportsPage() {
       {/* Breakdown Lists: Chi tiêu & Thu nhập */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Expense Breakdown */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 pb-3 border-b border-slate-100 dark:border-slate-800 my-0">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 pb-3 border-b border-slate-100 dark:border-slate-800 my-0">
             Cơ cấu chi tiêu ({formatVND(total_expense)})
           </h3>
           <div className="mt-4 space-y-3">
             {expenseBreakdown.length === 0 ? (
-              <p className="text-xs text-slate-400 py-4 text-center">
-                Không có chi tiêu trong giai đoạn này.
+              <p className="text-xs text-slate-400 py-6 text-center">
+                Không có dữ liệu chi tiêu trong giai đoạn này.
               </p>
             ) : (
               expenseBreakdown.map((cat) => (
@@ -167,13 +187,13 @@ export default function ReportsPage() {
                     <span className="font-semibold text-slate-700 dark:text-slate-300">
                       {cat.category_name}
                     </span>
-                    <span className="font-bold text-slate-900 dark:text-white">
+                    <span className="font-bold text-slate-900 dark:text-white tabular-nums">
                       {formatVND(cat.amount)} ({cat.percentage}%)
                     </span>
                   </div>
-                  <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-rose-500"
+                      className="h-full rounded-full bg-rose-500 transition-all duration-500"
                       style={{ width: `${cat.percentage}%` }}
                     />
                   </div>
@@ -184,14 +204,14 @@ export default function ReportsPage() {
         </div>
 
         {/* Income Breakdown */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 pb-3 border-b border-slate-100 dark:border-slate-800 my-0">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 pb-3 border-b border-slate-100 dark:border-slate-800 my-0">
             Nguồn thu nhập ({formatVND(total_income)})
           </h3>
           <div className="mt-4 space-y-3">
             {incomeBreakdown.length === 0 ? (
-              <p className="text-xs text-slate-400 py-4 text-center">
-                Không có thu nhập trong giai đoạn này.
+              <p className="text-xs text-slate-400 py-6 text-center">
+                Không có dữ liệu thu nhập trong giai đoạn này.
               </p>
             ) : (
               incomeBreakdown.map((cat) => (
@@ -200,13 +220,13 @@ export default function ReportsPage() {
                     <span className="font-semibold text-slate-700 dark:text-slate-300">
                       {cat.category_name}
                     </span>
-                    <span className="font-bold text-slate-900 dark:text-white">
+                    <span className="font-bold text-slate-900 dark:text-white tabular-nums">
                       {formatVND(cat.amount)} ({cat.percentage}%)
                     </span>
                   </div>
-                  <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-emerald-500"
+                      className="h-full rounded-full bg-emerald-500 transition-all duration-500"
                       style={{ width: `${cat.percentage}%` }}
                     />
                   </div>
@@ -219,33 +239,33 @@ export default function ReportsPage() {
 
       {/* Daily Cashflow Trend */}
       {daily_trend.length > 0 && (
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 pb-3 border-b border-slate-100 dark:border-slate-800 my-0">
-            Biến động dòng tiền theo ngày
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 pb-3 border-b border-slate-100 dark:border-slate-800 my-0">
+            Chi tiết biến động dòng tiền theo ngày
           </h3>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-100 text-slate-400 uppercase text-[10px]">
+              <thead className="border-b border-slate-100 bg-slate-50/75 dark:border-slate-800 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-bold tracking-wider">
                 <tr>
-                  <th className="py-2">Ngày</th>
-                  <th className="py-2 text-right">Thu nhập</th>
-                  <th className="py-2 text-right">Chi tiêu</th>
-                  <th className="py-2 text-right">Chênh lệch</th>
+                  <th className="py-2.5 px-3">Ngày</th>
+                  <th className="py-2.5 px-3 text-right">Thu nhập</th>
+                  <th className="py-2.5 px-3 text-right">Chi tiêu</th>
+                  <th className="py-2.5 px-3 text-right">Chênh lệch</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 tabular-nums">
                 {daily_trend.map((row) => (
-                  <tr key={row.date}>
-                    <td className="py-2 font-medium text-slate-600 dark:text-slate-300">
+                  <tr key={row.date} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                    <td className="py-2.5 px-3 font-semibold text-slate-600 dark:text-slate-300">
                       {formatDate(row.date)}
                     </td>
-                    <td className="py-2 text-right font-semibold text-emerald-600">
+                    <td className="py-2.5 px-3 text-right font-bold text-emerald-600 dark:text-emerald-400">
                       {row.income > 0 ? `+${formatVND(row.income)}` : "—"}
                     </td>
-                    <td className="py-2 text-right font-semibold text-rose-600">
+                    <td className="py-2.5 px-3 text-right font-bold text-rose-600 dark:text-rose-400">
                       {row.expense > 0 ? `-${formatVND(row.expense)}` : "—"}
                     </td>
-                    <td className="py-2 text-right font-bold text-slate-900 dark:text-white">
+                    <td className="py-2.5 px-3 text-right font-extrabold text-slate-900 dark:text-white">
                       {formatVND(row.savings)}
                     </td>
                   </tr>

@@ -37,7 +37,7 @@ export default function TransactionsPage({ modalOpen, setModalOpen }) {
     setFilters((prev) => ({
       ...prev,
       [key]: value,
-      page: 1, // reset page on filter change
+      page: 1,
     }));
   };
 
@@ -69,16 +69,16 @@ export default function TransactionsPage({ modalOpen, setModalOpen }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white my-0">
-            Lịch sử giao dịch
+            Sổ giao dịch thu chi
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Quản lý và tra cứu tất cả giao dịch thu, chi và chuyển tiền nội bộ
+            Tra cứu, tìm kiếm và quản lý chi tiết tất cả giao dịch trong ví và tài khoản ngân hàng
           </p>
         </div>
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 self-start sm:self-auto"
+          className="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-500/20 hover:bg-blue-700 active:scale-[0.98] transition-all self-start sm:self-auto"
         >
           <IconPlus className="w-4 h-4" />
           <span>Thêm giao dịch</span>
@@ -86,7 +86,7 @@ export default function TransactionsPage({ modalOpen, setModalOpen }) {
       </div>
 
       {error && (
-        <div className="rounded-xl bg-rose-50 p-4 text-xs font-semibold text-rose-600 dark:bg-rose-950/40">
+        <div className="rounded-xl bg-rose-50 p-4 text-xs font-semibold text-rose-600 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50">
           {error.message}
         </div>
       )}

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useCategories } from "../hooks/useFinance";
-import { IconPlus, IconX } from "../components/common/Icons";
+import { IconPlus, IconX, IconEdit, IconTrash } from "../components/common/Icons";
 
 const PRESET_COLORS = [
   "#3B82F6", "#10B981", "#EF4444", "#F59E0B", "#8B5CF6",
@@ -8,7 +8,7 @@ const PRESET_COLORS = [
 ];
 
 export default function CategoriesPage() {
-  const [activeTab, setActiveTab] = useState("expense"); // expense | income
+  const [activeTab, setActiveTab] = useState("expense");
   const { categories, loading, error, createCategory, updateCategory, deleteCategory } = useCategories(activeTab);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -92,7 +92,7 @@ export default function CategoriesPage() {
 
         <button
           onClick={handleOpenAdd}
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 self-start sm:self-auto"
+          className="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-500/20 hover:bg-blue-700 active:scale-[0.98] transition-all self-start sm:self-auto"
         >
           <IconPlus className="w-4 h-4" />
           <span>Thêm danh mục mới</span>
@@ -100,7 +100,7 @@ export default function CategoriesPage() {
       </div>
 
       {error && (
-        <div className="rounded-xl bg-rose-50 p-4 text-xs font-semibold text-rose-600 dark:bg-rose-950/40">
+        <div className="rounded-xl bg-rose-50 p-4 text-xs font-semibold text-rose-600 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50">
           {error.message}
         </div>
       )}
@@ -109,20 +109,20 @@ export default function CategoriesPage() {
       <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800">
         <button
           onClick={() => setActiveTab("expense")}
-          className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${
+          className={`cursor-pointer pb-3 text-xs sm:text-sm font-bold transition-all border-b-2 ${
             activeTab === "expense"
               ? "border-blue-600 text-blue-600 dark:text-blue-400"
-              : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400"
+              : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
           }`}
         >
           Danh mục chi tiêu ({categories.filter((c) => c.type === "expense").length})
         </button>
         <button
           onClick={() => setActiveTab("income")}
-          className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${
+          className={`cursor-pointer pb-3 text-xs sm:text-sm font-bold transition-all border-b-2 ${
             activeTab === "income"
               ? "border-blue-600 text-blue-600 dark:text-blue-400"
-              : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400"
+              : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
           }`}
         >
           Danh mục thu nhập ({categories.filter((c) => c.type === "income").length})
@@ -139,39 +139,41 @@ export default function CategoriesPage() {
           {categories.map((cat) => (
             <div
               key={cat.id}
-              className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+              className="group flex items-center justify-between rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <span
-                  className="h-4 w-4 rounded-md shrink-0 shadow-xs"
+                  className="h-4 w-4 rounded-md shrink-0 shadow-2xs"
                   style={{ backgroundColor: cat.color || "#3B82F6" }}
                 />
-                <div>
-                  <span className="font-bold text-slate-900 dark:text-white text-sm">
+                <div className="min-w-0">
+                  <span className="font-bold text-slate-900 dark:text-white text-sm truncate block">
                     {cat.name}
                   </span>
                   {cat.is_default && (
-                    <span className="ml-2 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                    <span className="mt-0.5 inline-block rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                       Mặc định
                     </span>
                   )}
                 </div>
               </div>
 
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 shrink-0">
                 <button
                   onClick={() => handleOpenEdit(cat)}
-                  className="rounded-lg p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-                  title="Chỉnh sửa"
+                  className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+                  title="Chỉnh sửa danh mục"
+                  aria-label="Sửa danh mục"
                 >
-                  ✏️
+                  <IconEdit className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleDelete(cat.id, cat.is_default)}
-                  className="rounded-lg p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400"
-                  title="Xóa / Ẩn"
+                  className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition-colors"
+                  title="Xóa / Ẩn danh mục"
+                  aria-label="Xóa danh mục"
                 >
-                  🗑️
+                  <IconTrash className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -181,29 +183,29 @@ export default function CategoriesPage() {
 
       {/* Add / Edit Category Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900 dark:border dark:border-slate-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900 dark:border dark:border-slate-800">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <h2 className="text-base font-bold text-slate-900 dark:text-white my-0">
                 {editingCategory ? "Chỉnh sửa danh mục" : "Thêm danh mục mới"}
               </h2>
               <button
                 onClick={() => setModalOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                className="cursor-pointer p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
               >
                 <IconX className="w-5 h-5" />
               </button>
             </div>
 
             {formError && (
-              <div className="mt-4 rounded-xl bg-rose-50 p-3 text-xs font-semibold text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
+              <div className="mt-4 rounded-xl bg-rose-50 p-3 text-xs font-semibold text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50">
                 {formError}
               </div>
             )}
 
             <form onSubmit={handleSave} className="mt-4 space-y-4 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300">
+                <label className="block font-bold text-slate-700 dark:text-slate-300">
                   Tên danh mục
                 </label>
                 <input
@@ -212,12 +214,12 @@ export default function CategoriesPage() {
                   placeholder="VD: Cà phê, Xăng xe, Tiền thưởng..."
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-2">
                   Chọn màu đại diện
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -226,27 +228,28 @@ export default function CategoriesPage() {
                       type="button"
                       key={c}
                       onClick={() => setColor(c)}
-                      className={`h-7 w-7 rounded-lg transition-transform ${
+                      className={`cursor-pointer h-7 w-7 rounded-lg transition-transform ${
                         color === c ? "scale-115 ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-slate-900" : ""
                       }`}
                       style={{ backgroundColor: c }}
+                      aria-label={`Màu ${c}`}
                     />
                   ))}
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                  className="cursor-pointer rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
+                  className="cursor-pointer rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 active:scale-[0.98] transition-all"
                 >
                   {submitting ? "Đang lưu..." : "Lưu danh mục"}
                 </button>

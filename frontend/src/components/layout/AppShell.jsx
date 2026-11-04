@@ -13,7 +13,7 @@ export default function AppShell({
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-800 antialiased dark:bg-slate-950 dark:text-slate-100">
+    <div className="flex min-h-screen bg-slate-50/70 text-slate-800 antialiased dark:bg-slate-950 dark:text-slate-100 selection:bg-blue-600 selection:text-white">
       {/* Sidebar navigation */}
       <Sidebar
         activeTab={activeTab}
@@ -32,7 +32,7 @@ export default function AppShell({
           setMobileOpen={setMobileOpen}
         />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
           {children}
         </main>
       </div>

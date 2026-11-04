@@ -108,40 +108,40 @@ export default function LoginPage() {
         : "Quản lý tài chính";
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-indigo-50 to-violet-100 px-4 py-10">
-      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-indigo-300/40 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-violet-300/40 blur-3xl" />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-slate-900 dark:to-blue-950/40 px-4 py-10">
+      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-blue-400/20 blur-3xl dark:bg-blue-600/10" />
+      <div className="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-indigo-400/20 blur-3xl dark:bg-indigo-600/10" />
 
       <div className="relative w-full max-w-md">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-3xl text-white shadow-lg shadow-indigo-500/25">
-            💸
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-3xl font-extrabold text-white shadow-lg shadow-blue-500/25">
+            ₫
           </div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600">
-            Tài chính cá nhân
+          <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400">
+            FinanceFlow
           </p>
-          <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
-          <p className="mt-2 text-sm text-slate-600">
+          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white my-0">{title}</h1>
+          <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
             {flow === "register"
               ? "Tạo tài khoản để bắt đầu theo dõi thu chi"
               : flow === "forgot"
                 ? "Nhập email để nhận liên kết đặt lại mật khẩu"
                 : flow === "reset"
                   ? "Chọn mật khẩu mới cho tài khoản"
-                  : "Đăng nhập để tiếp tục theo dõi thu chi"}
+                  : "Đăng nhập để tiếp tục quản lý tài chính"}
           </p>
         </div>
 
-        <div className="rounded-3xl border border-white/80 bg-white p-6 shadow-xl shadow-indigo-950/10 sm:p-8">
+        <div className="rounded-3xl border border-white/80 bg-white/95 dark:border-slate-800 dark:bg-slate-900/95 p-6 shadow-xl shadow-blue-950/5 dark:shadow-none backdrop-blur-md sm:p-8">
           {(flow === "login" || flow === "register") && (
-            <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
+            <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
               <button
                 type="button"
                 onClick={() => switchFlow("login")}
-                className={`rounded-lg py-2 text-sm font-semibold transition ${
+                className={`cursor-pointer rounded-lg py-2 text-xs sm:text-sm font-bold transition-all ${
                   flow === "login"
-                    ? "bg-white text-indigo-600 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
+                    ? "bg-white text-blue-600 shadow-xs dark:bg-slate-900 dark:text-blue-400"
+                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
                 }`}
               >
                 Đăng nhập
@@ -149,10 +149,10 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => switchFlow("register")}
-                className={`rounded-lg py-2 text-sm font-semibold transition ${
+                className={`cursor-pointer rounded-lg py-2 text-xs sm:text-sm font-bold transition-all ${
                   flow === "register"
-                    ? "bg-white text-indigo-600 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
+                    ? "bg-white text-blue-600 shadow-xs dark:bg-slate-900 dark:text-blue-400"
+                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
                 }`}
               >
                 Đăng ký
@@ -164,8 +164,8 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {flow === "register" && (
                 <label className="block">
-                  <span className="mb-1 block text-sm font-medium text-slate-700">
-                    Tên hiển thị <span className="text-slate-400">(không bắt buộc)</span>
+                  <span className="mb-1 block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Tên hiển thị <span className="text-slate-400 font-normal">(không bắt buộc)</span>
                   </span>
                   <input
                     type="text"
@@ -174,14 +174,14 @@ export default function LoginPage() {
                     autoComplete="name"
                     maxLength={100}
                     placeholder="Ví dụ: Minh"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-white transition-all"
                   />
                 </label>
               )}
 
               {flow !== "reset" && (
                 <label className="block">
-                  <span className="mb-1 block text-sm font-medium text-slate-700">Email</span>
+                  <span className="mb-1 block text-xs font-bold text-slate-700 dark:text-slate-300">Email</span>
                   <input
                     type="email"
                     required
@@ -189,14 +189,14 @@ export default function LoginPage() {
                     onChange={(event) => setEmail(event.target.value)}
                     autoComplete="email"
                     placeholder="ban@example.com"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-white transition-all"
                   />
                 </label>
               )}
 
               {flow !== "forgot" && (
                 <label className="block">
-                  <span className="mb-1 block text-sm font-medium text-slate-700">Mật khẩu</span>
+                  <span className="mb-1 block text-xs font-bold text-slate-700 dark:text-slate-300">Mật khẩu</span>
                   <input
                     type="password"
                     required
@@ -205,10 +205,10 @@ export default function LoginPage() {
                     onChange={(event) => setPassword(event.target.value)}
                     autoComplete={flow === "login" ? "current-password" : "new-password"}
                     placeholder="••••••••"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-white transition-all"
                   />
                   {flow === "register" && (
-                    <span className="mt-1 block text-xs text-slate-400">
+                    <span className="mt-1 block text-[11px] text-slate-400">
                       Tối thiểu 8 ký tự, không dùng mật khẩu quá phổ biến.
                     </span>
                   )}
@@ -217,7 +217,7 @@ export default function LoginPage() {
 
               {flow === "reset" && (
                 <label className="block">
-                  <span className="mb-1 block text-sm font-medium text-slate-700">Nhập lại mật khẩu</span>
+                  <span className="mb-1 block text-xs font-bold text-slate-700 dark:text-slate-300">Nhập lại mật khẩu</span>
                   <input
                     type="password"
                     required
@@ -225,22 +225,22 @@ export default function LoginPage() {
                     value={passwordConfirm}
                     onChange={(event) => setPasswordConfirm(event.target.value)}
                     autoComplete="new-password"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-white transition-all"
                   />
                 </label>
               )}
 
               {error && (
-                <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>
+                <p className="rounded-xl bg-rose-50 px-3.5 py-2.5 text-xs font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50">{error}</p>
               )}
               {notice && (
-                <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{notice}</p>
+                <p className="rounded-xl bg-emerald-50 px-3.5 py-2.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50">{notice}</p>
               )}
 
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 py-3 font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:brightness-105 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+                className="cursor-pointer w-full rounded-xl bg-blue-600 py-3 font-bold text-xs sm:text-sm text-white shadow-sm shadow-blue-500/25 transition-all hover:bg-blue-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {submitting
                   ? "Đang xử lý..."
@@ -267,7 +267,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => switchFlow("login")}
-                className="w-full rounded-xl bg-indigo-600 py-3 font-semibold text-white shadow-sm shadow-indigo-500/20 hover:bg-indigo-700"
+                className="cursor-pointer w-full rounded-xl bg-blue-600 py-3 font-bold text-xs sm:text-sm text-white shadow-sm shadow-blue-500/20 hover:bg-blue-700"
               >
                 Đến đăng nhập
               </button>
@@ -279,7 +279,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => switchFlow("forgot")}
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                className="cursor-pointer text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
               >
                 Quên mật khẩu?
               </button>
@@ -287,7 +287,7 @@ export default function LoginPage() {
                 type="button"
                 disabled={submitting}
                 onClick={handleResendVerification}
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50"
+                className="cursor-pointer text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 disabled:opacity-50"
               >
                 Gửi lại email xác thực
               </button>
@@ -297,7 +297,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => switchFlow("login")}
-              className="mt-3 w-full text-center text-sm font-medium text-indigo-600 hover:text-indigo-700"
+              className="cursor-pointer mt-3 w-full text-center text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400"
             >
               Quay lại đăng nhập
             </button>

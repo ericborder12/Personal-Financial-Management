@@ -3,7 +3,7 @@ import BudgetCard from "../components/budgets/BudgetCard";
 import BudgetModal from "../components/budgets/BudgetModal";
 import { useBudgets, useCategories } from "../hooks/useFinance";
 import { formatVND } from "../constants";
-import { IconPlus } from "../components/common/Icons";
+import { IconPlus, IconChevronLeft, IconChevronRight } from "../components/common/Icons";
 
 export default function BudgetsPage() {
   const now = new Date();
@@ -57,7 +57,7 @@ export default function BudgetsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white my-0">
-            Quản lý ngân sách chi tiêu
+            Hạn mức ngân sách tháng
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Đặt giới hạn chi tiêu theo danh mục để kiểm soát tài chính cá nhân hiệu quả
@@ -65,21 +65,25 @@ export default function BudgetsPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-900">
             <button
               onClick={handlePrevMonth}
-              className="rounded-lg p-1.5 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="cursor-pointer rounded-lg p-1.5 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors"
+              title="Tháng trước"
+              aria-label="Tháng trước"
             >
-              ←
+              <IconChevronLeft className="w-4 h-4" />
             </button>
-            <span className="px-2 text-xs font-bold text-slate-800 dark:text-slate-200">
+            <span className="px-3 text-xs font-extrabold text-slate-800 dark:text-slate-200 min-w-[90px] text-center">
               T{selectedMonth}/{selectedYear}
             </span>
             <button
               onClick={handleNextMonth}
-              className="rounded-lg p-1.5 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="cursor-pointer rounded-lg p-1.5 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors"
+              title="Tháng sau"
+              aria-label="Tháng sau"
             >
-              →
+              <IconChevronRight className="w-4 h-4" />
             </button>
           </div>
 
@@ -88,7 +92,7 @@ export default function BudgetsPage() {
               setEditingBudget(null);
               setModalOpen(true);
             }}
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700"
+            className="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-500/20 hover:bg-blue-700 active:scale-[0.98] transition-all"
           >
             <IconPlus className="w-4 h-4" />
             <span>Thiết lập ngân sách</span>
@@ -97,35 +101,35 @@ export default function BudgetsPage() {
       </div>
 
       {error && (
-        <div className="rounded-xl bg-rose-50 p-4 text-xs font-semibold text-rose-600 dark:bg-rose-950/40">
+        <div className="rounded-xl bg-rose-50 p-4 text-xs font-semibold text-rose-600 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50">
           {error.message}
         </div>
       )}
 
       {/* Overview Banner */}
-      <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
           <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
               Tổng ngân sách tháng
             </span>
-            <div className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+            <div className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white tabular-nums">
               {formatVND(totalLimit)}
             </div>
           </div>
           <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
               Đã chi tiêu
             </span>
-            <div className="mt-1 text-2xl font-extrabold text-rose-600 dark:text-rose-400">
+            <div className="mt-1 text-2xl font-extrabold text-rose-600 dark:text-rose-400 tabular-nums">
               {formatVND(totalSpent)}
             </div>
           </div>
           <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
               Còn lại
             </span>
-            <div className="mt-1 text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
+            <div className="mt-1 text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 tabular-nums">
               {formatVND(totalRemaining)}
             </div>
           </div>
@@ -133,15 +137,15 @@ export default function BudgetsPage() {
 
         {totalLimit > 0 && (
           <div className="mt-5 space-y-1.5">
-            <div className="flex justify-between text-xs font-semibold">
+            <div className="flex justify-between text-xs font-bold">
               <span className="text-slate-500">Tiến độ chi tiêu tổng quát</span>
               <span
                 className={
                   overallPercentage >= 100
-                    ? "text-rose-600 font-bold"
+                    ? "text-rose-600"
                     : overallPercentage >= 80
-                    ? "text-amber-600 font-bold"
-                    : "text-emerald-600 font-bold"
+                    ? "text-amber-600"
+                    : "text-emerald-600"
                 }
               >
                 {overallPercentage}%
