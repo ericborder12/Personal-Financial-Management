@@ -12,7 +12,7 @@ import { useAccounts, useCategories } from "./hooks/useFinance";
 import { financeApi } from "./api/finance";
 
 export default function App() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [quickTxOpen, setQuickTxOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -41,6 +41,7 @@ export default function App() {
       user={user}
       onLogout={handleLogout}
       onOpenQuickTransaction={() => setQuickTxOpen(true)}
+      onProfileUpdated={refreshUser}
     >
       {activeTab === "dashboard" && (
         <DashboardPage

@@ -78,6 +78,8 @@ export async function request(path, { method = "GET", body, retryCsrf = true } =
 export const api = {
   csrf: () => fetchCsrf(),
   me: () => request("/auth/me/"),
+  updateMe: (data) => request("/auth/me/", { method: "PATCH", body: data }),
+  changePassword: (data) => request("/auth/change-password/", { method: "POST", body: data }),
   register: (data) => request("/auth/register/", { method: "POST", body: data }),
   login: (data) => request("/auth/login/", { method: "POST", body: data }),
   logout: () => request("/auth/logout/", { method: "POST" }),

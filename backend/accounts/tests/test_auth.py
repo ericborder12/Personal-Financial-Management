@@ -197,3 +197,103 @@ def test_register_requires_csrf_when_enforced():
         "/api/auth/register/", payload, format="json", HTTP_X_CSRFTOKEN=token
     )
     assert res.status_code == 202
+
+
+@pytest.mark.django_db
+def test_me_returns_profile_info(api_client):
+    user = User.objects.create_user(
+        email="profile@example.com", password="strongpass123", display_name="Nguyễn Văn A"
+    )
+    api_client.post(
+        "/api/auth/login/",
+        {"email": user.email, "password": "strongpass123"},
+        format="json",
+    )
+    res = api_client.get("/api/auth/me/")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["email"] == "profile@example.com"
+    assert data["display_name"] == "Nguyễn Văn A"
+    assert "date_joined" in data
+
+
+@pytest.mark.django_db
+def test_patch_me_updates_display_name(api_client):
+    user = User.objects.create_user(email="patch@example.com", password="strongpass123")
+    api_client.post(
+        "/api/auth/login/",
+        {"email": user.email, "password": "strongpass123"},
+        format="json",
+    )
+    res = api_client.patch(
+        "/api/auth/me/",
+        {"display_name": "Tên Mới"},
+        format="json",
+    )
+    assert res.status_code == 200
+    assert res.json()["display_name"] == "Tên Mới"
+    user.refresh_from_db()
+    assert user.display_name == "Tên Mới"
+
+
+@pytest.mark.django_db
+def test_change_password_success(api_client):
+    user = User.objects.create_user(email="pwd@example.com", password="oldpassword123")
+    api_client.post(
+        "/api/auth/login/",
+        {"email": user.email, "password": "oldpassword123"},
+        format="json",
+    )
+    res = api_client.post(
+        "/api/auth/change-password/",
+        {"old_password": "oldpassword123", "new_password": "newstrongpassword456"},
+        format="json",
+    )
+    assert res.status_code == 200
+    assert res.json()["detail"] == "Đổi mật khẩu thành công."
+
+    # User can still make authenticated requests (session kept alive)
+    assert api_client.get("/api/auth/me/").status_code == 200
+
+    # User can log in with new password
+    api_client.post("/api/auth/logout/")
+    res_login = api_client.post(
+        "/api/auth/login/",
+        {"email": user.email, "password": "newstrongpassword456"},
+        format="json",
+    )
+    assert res_login.status_code == 200
+
+
+@pytest.mark.django_db
+def test_change_password_wrong_old_password(api_client):
+    user = User.objects.create_user(email="pwd2@example.com", password="oldpassword123")
+    api_client.post(
+        "/api/auth/login/",
+        {"email": user.email, "password": "oldpassword123"},
+        format="json",
+    )
+    res = api_client.post(
+        "/api/auth/change-password/",
+        {"old_password": "wrongpassword", "new_password": "newstrongpassword456"},
+        format="json",
+    )
+    assert res.status_code == 400
+    assert "old_password" in res.json()
+
+
+@pytest.mark.django_db
+def test_change_password_weak_new_password(api_client):
+    user = User.objects.create_user(email="pwd3@example.com", password="oldpassword123")
+    api_client.post(
+        "/api/auth/login/",
+        {"email": user.email, "password": "oldpassword123"},
+        format="json",
+    )
+    res = api_client.post(
+        "/api/auth/change-password/",
+        {"old_password": "oldpassword123", "new_password": "123"},
+        format="json",
+    )
+    assert res.status_code == 400
+    assert "new_password" in res.json()

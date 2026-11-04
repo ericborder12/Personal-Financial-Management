@@ -18,7 +18,17 @@ const NAV_ITEMS = [
   { id: "reports", label: "Báo cáo & Phân tích", icon: IconReports },
 ];
 
-export default function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
+export default function Sidebar({
+  activeTab,
+  setActiveTab,
+  mobileOpen,
+  setMobileOpen,
+  user,
+  onOpenProfile,
+}) {
+  const displayName = user?.display_name || user?.email || "Người dùng";
+  const userInitial = displayName.charAt(0).toUpperCase();
+
   return (
     <>
       {/* Mobile backdrop */}
@@ -97,18 +107,42 @@ export default function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobile
           })}
         </nav>
 
-        {/* Footer info pill */}
-        <div className="p-5 border-t border-slate-100 dark:border-slate-800">
-          <div className="rounded-2xl bg-slate-50/80 p-4 text-xs text-slate-500 dark:bg-slate-800/60 dark:text-slate-400 border border-slate-200/80 dark:border-slate-800">
+        {/* User Profile Card & Footer Info */}
+        <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+          {onOpenProfile && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenProfile();
+                setMobileOpen(false);
+              }}
+              className="cursor-pointer group flex w-full items-center gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3 text-left transition-all hover:bg-slate-100/80 hover:border-blue-200 dark:border-slate-800 dark:bg-slate-800/50 dark:hover:bg-slate-800 dark:hover:border-slate-700"
+              title="Xem và chỉnh sửa hồ sơ cá nhân"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-sm font-black text-white shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+                {userInitial}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  {displayName}
+                </p>
+                <p className="text-[11px] font-semibold text-slate-400 group-hover:text-blue-500 transition-colors">
+                  Hồ sơ & Bảo mật →
+                </p>
+              </div>
+            </button>
+          )}
+
+          <div className="rounded-xl bg-slate-50/60 p-3 text-xs text-slate-500 dark:bg-slate-800/40 dark:text-slate-400 border border-slate-200/70 dark:border-slate-800/80">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-slate-700 dark:text-slate-200 text-xs">Đơn vị tiền tệ</span>
-              <span className="rounded-lg bg-blue-50 px-2 py-0.5 text-xs font-extrabold text-blue-600 border border-blue-200/60 dark:bg-blue-950/60 dark:text-blue-400 dark:border-blue-900/40">
+              <span className="font-bold text-slate-700 dark:text-slate-300 text-xs">Tiền tệ</span>
+              <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-600 border border-blue-200/60 dark:bg-blue-950/60 dark:text-blue-400 dark:border-blue-900/40">
                 VNĐ (₫)
               </span>
             </div>
-            <div className="mt-2.5 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Đồng bộ tự động thời gian thực</span>
+              <span>Đồng bộ thời gian thực</span>
             </div>
           </div>
         </div>

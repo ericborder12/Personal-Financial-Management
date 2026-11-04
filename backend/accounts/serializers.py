@@ -7,8 +7,32 @@ from .models import User
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "email", "display_name"]
-        read_only_fields = ["id", "email", "display_name"]
+        fields = ["id", "email", "display_name", "date_joined"]
+        read_only_fields = ["id", "email", "date_joined"]
+
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+    display_name = serializers.CharField(max_length=100, allow_blank=True, required=False)
+
+    class Meta:
+        model = User
+        fields = ["display_name"]
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True)
+
+    def validate_old_password(self, value):
+        user = self.context["request"].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Mật khẩu hiện tại không chính xác.")
+        return value
+
+    def validate_new_password(self, value):
+        user = self.context["request"].user
+        validate_password(value, user=user)
+        return value
 
 
 class RegisterSerializer(serializers.Serializer):

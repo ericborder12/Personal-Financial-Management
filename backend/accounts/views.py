@@ -2,7 +2,7 @@ import smtplib
 from urllib.parse import urlencode
 
 from django.conf import settings
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
@@ -19,11 +19,13 @@ from rest_framework.views import APIView
 from .authentication import CsrfEnforcingSessionAuthentication
 from .models import User
 from .serializers import (
+    ChangePasswordSerializer,
     EmailAddressSerializer,
     EmailTokenSerializer,
     PasswordResetConfirmSerializer,
     RegisterSerializer,
     UserSerializer,
+    UserUpdateSerializer,
 )
 
 
@@ -227,6 +229,26 @@ class MeView(APIView):
 
     def get(self, request):
         return Response(UserSerializer(request.user).data)
+
+    def patch(self, request):
+        serializer = UserUpdateSerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(UserSerializer(request.user).data)
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(
+            data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        request.user.set_password(serializer.validated_data["new_password"])
+        request.user.save(update_fields=["password"])
+        update_session_auth_hash(request, request.user)
+        return Response({"detail": "Đổi mật khẩu thành công."})
 
 
 class CsrfView(APIView):

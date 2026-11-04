@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   IconMenu,
   IconPlus,
@@ -22,26 +22,12 @@ export default function Header({
   onLogout,
   onOpenQuickTransaction,
   setMobileOpen,
+  onOpenProfile,
+  darkMode,
+  setDarkMode,
 }) {
-  const [darkMode, setDarkMode] = useState(() => {
-    return (
-      localStorage.getItem("theme") === "dark" ||
-      (!("theme" in localStorage) &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches)
-    );
-  });
-
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  }, [darkMode]);
-
-  const userInitial = (user?.email || "U").charAt(0).toUpperCase();
+  const displayName = user?.display_name || user?.email || "Người dùng";
+  const userInitial = displayName.charAt(0).toUpperCase();
 
   return (
     <header className="sticky top-0 z-30 flex h-20 w-full items-center justify-between border-b border-slate-200/80 bg-white/80 px-6 sm:px-8 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80">
@@ -83,25 +69,33 @@ export default function Header({
           {darkMode ? <IconSun className="w-5 h-5 text-amber-400" /> : <IconMoon className="w-5 h-5 text-slate-600" />}
         </button>
 
-        {/* User Pill & Logout */}
-        <div className="flex items-center gap-3 border-l border-slate-200/90 pl-3.5 dark:border-slate-800">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-sm font-black text-white shadow-sm shadow-blue-500/20">
-            {userInitial}
-          </div>
+        {/* User Pill (Opens Profile Modal) & Logout */}
+        <div className="flex items-center gap-2 border-l border-slate-200/90 pl-3 sm:pl-4 dark:border-slate-800">
+          <button
+            type="button"
+            onClick={onOpenProfile}
+            className="cursor-pointer group flex items-center gap-2.5 rounded-xl p-1.5 transition-all hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 text-left"
+            title="Nhấn để mở Hồ sơ & Cài đặt tài khoản"
+            aria-label="Mở hồ sơ cá nhân"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-sm font-black text-white shadow-sm shadow-blue-500/20 group-hover:scale-105 transition-transform shrink-0">
+              {userInitial}
+            </div>
 
-          <div className="hidden md:flex flex-col text-left">
-            <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 max-w-[160px] truncate">
-              {user?.email || "Người dùng"}
-            </span>
-            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              Đang hoạt động
-            </span>
-          </div>
+            <div className="hidden md:flex flex-col text-left">
+              <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 max-w-[150px] truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                {displayName}
+              </span>
+              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Cài đặt hồ sơ
+              </span>
+            </div>
+          </button>
 
           <button
             onClick={onLogout}
-            className="cursor-pointer rounded-xl p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 focus-visible:ring-2 focus-visible:ring-rose-500 ml-1"
+            className="cursor-pointer rounded-xl p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 focus-visible:ring-2 focus-visible:ring-rose-500"
             title="Đăng xuất khỏi hệ thống"
             aria-label="Đăng xuất"
           >
