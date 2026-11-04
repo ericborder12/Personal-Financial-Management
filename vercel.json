@@ -2,7 +2,10 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "services": {
     "frontend": { "root": "frontend/" },
-    "backend": { "root": "backend/" }
+    "backend": {
+      "root": "backend/",
+      "entrypoint": "config/wsgi.py"
+    }
   },
   "rewrites": [
     { "source": "/api/(.*)", "destination": { "service": "backend" } },
