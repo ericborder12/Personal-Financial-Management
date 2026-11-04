@@ -1,6 +1,7 @@
 import uuid
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -89,26 +90,71 @@ class Category(models.Model):
 
 
 class Transaction(models.Model):
-    TYPE_CHOICES = [("income", "Thu"), ("expense", "Chi")]
+    TYPE_CHOICES = [
+        ("income", "Thu"),
+        ("expense", "Chi"),
+        ("transfer", "Chuyển tiền"),
+    ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="transactions")
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     amount = models.BigIntegerField()
-    category = models.CharField(max_length=50)
+    account = models.ForeignKey(
+        Account,
+        on_delete=models.CASCADE,
+        related_name="transactions",
+        null=True,
+        blank=True,
+    )
+    to_account = models.ForeignKey(
+        Account,
+        on_delete=models.CASCADE,
+        related_name="incoming_transfers",
+        null=True,
+        blank=True,
+    )
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.SET_NULL,
+        related_name="transactions",
+        null=True,
+        blank=True,
+    )
     date = models.DateField()
     note = models.CharField(max_length=255, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        indexes = [models.Index(fields=["user", "date"])]
+        indexes = [
+            models.Index(fields=["user", "date"]),
+            models.Index(fields=["account", "date"]),
+        ]
         constraints = [
             models.CheckConstraint(condition=models.Q(amount__gt=0), name="transaction_amount_positive")
         ]
         ordering = ["-date", "-created_at"]
 
+    def clean(self):
+        super().clean()
+        if self.type == "transfer":
+            if not self.account_id:
+                raise ValidationError({"account": "Tài khoản nguồn là bắt buộc khi chuyển tiền."})
+            if not self.to_account_id:
+                raise ValidationError({"to_account": "Tài khoản đích là bắt buộc khi chuyển tiền."})
+            if self.account_id == self.to_account_id:
+                raise ValidationError({"to_account": "Tài khoản nguồn và tài khoản đích phải khác nhau."})
+        elif self.type in ("income", "expense"):
+            if not self.account_id:
+                raise ValidationError({"account": "Vui lòng chọn tài khoản giao dịch."})
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"{self.type} {self.amount} ({self.category})"
+        cat_name = self.category.name if self.category else "Không có danh mục"
+        return f"{self.type} {self.amount} ({cat_name})"
 
 
 class Budget(models.Model):
