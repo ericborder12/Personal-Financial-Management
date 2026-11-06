@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Account, Budget, Category, Profile, Transaction
+from .models import Account, Budget, Category, Profile, Transaction, SavingsDeposit
 
 MAX_AMOUNT = 9223372036854775807
 
@@ -189,3 +189,52 @@ class ImportSerializer(serializers.Serializer):
         if len(categories) != len(set(categories)):
             raise serializers.ValidationError("Danh mục bị trùng.")
         return value
+
+
+class SavingsDepositSerializer(serializers.ModelSerializer):
+    amount = StrictIntegerField(min_value=1, max_value=MAX_AMOUNT)
+    term_months = serializers.IntegerField(min_value=1, max_value=120, default=6)
+    interest_rate = serializers.DecimalField(max_digits=5, decimal_places=2, min_value=0, max_value=100)
+    maturity_date = serializers.DateField(read_only=True)
+    estimated_interest = serializers.IntegerField(read_only=True)
+    source_account_name = serializers.CharField(source="source_account.name", read_only=True)
+
+    class Meta:
+        model = SavingsDeposit
+        fields = [
+            "id",
+            "bank_name",
+            "source_account",
+            "source_account_name",
+            "savings_account",
+            "amount",
+            "start_date",
+            "term_months",
+            "interest_rate",
+            "payout_type",
+            "is_settled",
+            "settled_at",
+            "actual_interest",
+            "settled_amount",
+            "notes",
+            "maturity_date",
+            "estimated_interest",
+            "created_at",
+        ]
+        read_only_fields = [
+            "id",
+            "savings_account",
+            "is_settled",
+            "settled_at",
+            "actual_interest",
+            "settled_amount",
+            "maturity_date",
+            "estimated_interest",
+            "created_at",
+        ]
+
+    def validate_source_account(self, value):
+        if value and value.user != self.context["request"].user:
+            raise serializers.ValidationError("Tài khoản nguồn không hợp lệ.")
+        return value
+

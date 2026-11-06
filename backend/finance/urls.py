@@ -1,4 +1,5 @@
 from django.urls import path
+from rest_framework.routers import DefaultRouter
 
 from .views import (
     AccountDetailView,
@@ -12,10 +13,14 @@ from .views import (
     ImportView,
     ProfileView,
     ReportsView,
+    SavingsDepositViewSet,
     TransactionDetailView,
     TransactionListCreateView,
     TransactionSummaryView,
 )
+
+router = DefaultRouter()
+router.register(r"savings", SavingsDepositViewSet, basename="savings")
 
 urlpatterns = [
     path("health/", HealthView.as_view(), name="health"),
@@ -36,4 +41,4 @@ urlpatterns = [
     path("budgets/<uuid:pk>/", BudgetDetailView.as_view(), name="budget-detail"),
     path("profile/", ProfileView.as_view(), name="profile"),
     path("import/", ImportView.as_view(), name="import-data"),
-]
+] + router.urls

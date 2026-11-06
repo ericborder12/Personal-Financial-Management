@@ -2,12 +2,13 @@ from django.db import connection, transaction
 from django.db.models import Case, IntegerField, Q, Sum, Value, When
 from django.utils.dateparse import parse_date
 from django.utils import timezone
-from rest_framework import filters, generics, pagination, serializers, status
+from rest_framework import filters, generics, pagination, serializers, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Account, Budget, Category, Profile, Transaction
+from .models import Account, Budget, Category, Profile, Transaction, SavingsDeposit
 from .serializers import (
     AccountSerializer,
     BudgetSerializer,
@@ -15,6 +16,7 @@ from .serializers import (
     ImportSerializer,
     ProfileSerializer,
     TransactionSerializer,
+    SavingsDepositSerializer,
 )
 
 
@@ -547,3 +549,145 @@ class ImportView(APIView):
                 "budgets": len(data["budgets"]),
             }
         )
+
+
+class SavingsDepositViewSet(viewsets.ModelViewSet):
+    serializer_class = SavingsDepositSerializer
+
+    def get_queryset(self):
+        return SavingsDeposit.objects.filter(user=self.request.user).order_by("is_settled", "start_date")
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+
+        active_deposits = [d for d in queryset if not d.is_settled]
+        total_deposit = sum(d.amount for d in active_deposits)
+        total_estimated_interest = sum(d.estimated_interest for d in active_deposits)
+        today = timezone.now().date()
+        maturing_soon_count = sum(
+            1 for d in active_deposits
+            if d.maturity_date >= today and (d.maturity_date - today).days <= 30
+        )
+
+        return Response({
+            "results": serializer.data,
+            "summary": {
+                "total_deposit": total_deposit,
+                "total_estimated_interest": total_estimated_interest,
+                "active_count": len(active_deposits),
+                "maturing_soon_count": maturing_soon_count,
+            }
+        })
+
+    def perform_create(self, serializer):
+        with transaction.atomic():
+            source_acc = serializer.validated_data.get("source_account")
+            savings_acc = None
+            if source_acc:
+                savings_acc, _ = Account.objects.get_or_create(
+                    user=self.request.user,
+                    type="savings",
+                    defaults={
+                        "name": "Sổ tiết kiệm",
+                        "color": "#10B981",
+                        "icon": "vault",
+                        "initial_balance": 0,
+                    },
+                )
+            deposit = serializer.save(user=self.request.user, savings_account=savings_acc)
+
+            if source_acc and savings_acc:
+                Transaction.objects.create(
+                    user=self.request.user,
+                    type="transfer",
+                    amount=deposit.amount,
+                    account=source_acc,
+                    to_account=savings_acc,
+                    date=deposit.start_date,
+                    note=f"Gửi tiết kiệm: {deposit.bank_name}",
+                )
+
+    @action(detail=True, methods=["post"])
+    def settle(self, request, pk=None):
+        deposit = self.get_object()
+        if deposit.is_settled:
+            return Response(
+                {"detail": "Sổ tiết kiệm này đã được tất toán."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        dest_acc_id = request.data.get("destination_account")
+        if not dest_acc_id:
+            return Response(
+                {"destination_account": "Vui lòng chọn tài khoản nhận tiền."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        dest_acc = Account.objects.filter(user=request.user, id=dest_acc_id).first()
+        if not dest_acc:
+            return Response(
+                {"destination_account": "Tài khoản nhận tiền không tồn tại."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            actual_interest = int(request.data.get("actual_interest", deposit.estimated_interest))
+            if actual_interest < 0:
+                actual_interest = 0
+        except (ValueError, TypeError):
+            actual_interest = deposit.estimated_interest
+
+        settle_date = timezone.now().date()
+
+        with transaction.atomic():
+            if deposit.savings_account:
+                Transaction.objects.create(
+                    user=request.user,
+                    type="transfer",
+                    amount=deposit.amount,
+                    account=deposit.savings_account,
+                    to_account=dest_acc,
+                    date=settle_date,
+                    note=f"Tất toán gốc tiết kiệm: {deposit.bank_name}",
+                )
+
+            if actual_interest > 0:
+                cat_interest, _ = Category.objects.get_or_create(
+                    user=request.user,
+                    name="Lãi tiết kiệm",
+                    type="income",
+                    defaults={"color": "#10B981", "icon": "tag"},
+                )
+                Transaction.objects.create(
+                    user=request.user,
+                    type="income",
+                    amount=actual_interest,
+                    account=dest_acc,
+                    category=cat_interest,
+                    date=settle_date,
+                    note=f"Tiền lãi tiết kiệm: {deposit.bank_name}",
+                )
+
+            deposit.is_settled = True
+            deposit.settled_at = settle_date
+            deposit.actual_interest = actual_interest
+            deposit.settled_amount = deposit.amount + actual_interest
+            deposit.save(update_fields=["is_settled", "settled_at", "actual_interest", "settled_amount"])
+
+        serializer = self.get_serializer(deposit)
+        return Response(serializer.data)
+
+    def perform_destroy(self, instance):
+        with transaction.atomic():
+            if not instance.is_settled and instance.source_account and instance.savings_account:
+                Transaction.objects.filter(
+                    user=self.request.user,
+                    type="transfer",
+                    account=instance.source_account,
+                    to_account=instance.savings_account,
+                    amount=instance.amount,
+                    note=f"Gửi tiết kiệm: {instance.bank_name}",
+                ).delete()
+            instance.delete()
+
