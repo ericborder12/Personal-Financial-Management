@@ -90,9 +90,27 @@ class HealthView(APIView):
     authentication_classes = []
 
     def get(self, request):
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT 1")
-        return Response({"status": "ok"})
+        db_status = "ok"
+        error_msg = None
+        db_engine = connection.settings_dict.get("ENGINE")
+        db_host = connection.settings_dict.get("HOST")
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+        except Exception as e:
+            db_status = "error"
+            error_msg = f"{type(e).__name__}: {str(e)}"
+
+        data = {"status": db_status}
+        if db_status != "ok" or request.query_params.get("diag") == "1":
+            import os
+            data["diag"] = {
+                "engine": db_engine,
+                "host": db_host,
+                "has_database_url": bool(os.getenv("DATABASE_URL")),
+                "error": error_msg,
+            }
+        return Response(data)
 
 
 class TransactionListCreateView(generics.ListCreateAPIView):
