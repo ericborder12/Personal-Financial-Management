@@ -32,7 +32,8 @@ backend/staticfiles/
 
 # Env / Vercel
 .env
-.env.local
+.env.*
+!.env.example
 .vercel
 venv/
 .venv/
