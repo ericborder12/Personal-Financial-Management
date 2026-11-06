@@ -17,18 +17,25 @@ ALLOWED_HOSTS = [
     h
     for h in os.getenv(
         "ALLOWED_HOSTS",
-        "localhost,127.0.0.1,.vercel.app,.trycloudflare.com,.pages.dev",
+        "localhost,127.0.0.1",
     ).split(",")
     if h
 ]
+for _h in [".vercel.app", ".trycloudflare.com", ".pages.dev"]:
+    if _h not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_h)
+
 CSRF_TRUSTED_ORIGINS = [
     o
     for o in os.getenv(
         "CSRF_TRUSTED_ORIGINS",
-        "http://localhost:5173,https://*.vercel.app,https://personal-financial-management-three.vercel.app,https://*.trycloudflare.com,https://*.pages.dev",
+        "http://localhost:5173,https://personal-financial-management-three.vercel.app",
     ).split(",")
     if o
 ]
+for _o in ["https://*.vercel.app", "https://*.trycloudflare.com", "https://*.pages.dev"]:
+    if _o not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(_o)
 
 DATABASES = {
     "default": dj_database_url.parse(
@@ -139,10 +146,10 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "None" if not DEBUG else "Lax")
-CSRF_COOKIE_SAMESITE = os.getenv("CSRF_COOKIE_SAMESITE", "None" if not DEBUG else "Lax")
-SESSION_COOKIE_SECURE = True if SESSION_COOKIE_SAMESITE == "None" else not DEBUG
-CSRF_COOKIE_SECURE = True if CSRF_COOKIE_SAMESITE == "None" else not DEBUG
+SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "None")
+CSRF_COOKIE_SAMESITE = os.getenv("CSRF_COOKIE_SAMESITE", "None")
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_AGE = 1209600
 CSRF_COOKIE_HTTPONLY = False
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
