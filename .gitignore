@@ -36,3 +36,4 @@ backend/staticfiles/
 .vercel
 venv/
 .venv/
+.neon

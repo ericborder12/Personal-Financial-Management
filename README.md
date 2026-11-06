@@ -81,6 +81,15 @@ Biến môi trường truyền trực tiếp trên dòng lệnh sẽ ghi đè gi
 | `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | Tài khoản và mật khẩu SMTP |
 | `EMAIL_USE_TLS` | Bật STARTTLS, mặc định `True` |
 | `DEFAULT_FROM_EMAIL` | Email gửi đi; mặc định là `EMAIL_HOST_USER` |
+| `CLOUDFLARE_ACCOUNT_ID` | Account ID trên Cloudflare Dashboard (cho Trợ lý AI Q&A) |
+| `CLOUDFLARE_API_TOKEN` | API Token quyền Workers AI (cho Trợ lý AI Q&A) |
+| `CLOUDFLARE_AI_MODEL` | Tên model AI, mặc định `@cf/meta/llama-3.1-8b-instruct` |
+
+### Trợ lý AI Q&A & Quản lý Sổ tiết kiệm
+
+- **Trợ lý AI & Hỏi đáp (Cloudflare Workers AI)**: Hướng dẫn sử dụng chi tiết các tính năng của ứng dụng và tư vấn kế hoạch chi tiêu, phân bổ thu nhập (quy tắc 50/30/20, gợi ý cắt giảm chi phí) dựa trên số liệu thực tế từ tài khoản của bạn.
+- **Sổ tiết kiệm (Tiền gửi ngân hàng)**: Quản lý chi tiết các khoản gửi tiết kiệm có kỳ hạn (ngân hàng, kỳ hạn, lãi suất, ngày đáo hạn, tiền lãi dự kiến). Khi mở sổ, số tiền được luân chuyển an toàn từ tài khoản nguồn mà không bị tính vào chi tiêu sinh hoạt; khi tất toán, tiền gốc được hoàn về ví và tiền lãi được ghi nhận vào danh mục Thu nhập.
+- **Máy tính lãi suất nhanh (Savings Calculator)**: Bảng tính tương tác thời gian thực với lộ trình dòng tiền lãi từng tháng giúp người dùng dự toán trước khi mở sổ thật.
 
 Muốn gửi email thật (xác thực / đặt lại mật khẩu) thì phải cấu hình SMTP.
 Khi `EMAIL_HOST` có giá trị (ví dụ `smtp.gmail.com`, `smtp.resend.com`,
