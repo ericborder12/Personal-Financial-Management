@@ -20,6 +20,7 @@ class Account(models.Model):
         ("cash", "Tiền mặt"),
         ("bank", "Tài khoản ngân hàng"),
         ("ewallet", "Ví điện tử"),
+        ("savings", "Sổ tiết kiệm"),
         ("other", "Khác"),
     ]
 
@@ -179,4 +180,65 @@ class Budget(models.Model):
     def __str__(self):
         cat_name = self.category.name if self.category else "All"
         return f"{cat_name}: {self.limit} ({self.month}/{self.year})"
+
+
+class SavingsDeposit(models.Model):
+    PAYOUT_CHOICES = [
+        ("end_of_term", "Lãi cuối kỳ"),
+        ("monthly", "Lãi hàng tháng"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="savings_deposits")
+    bank_name = models.CharField(max_length=100)
+    source_account = models.ForeignKey(
+        Account,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="outbound_savings",
+    )
+    savings_account = models.ForeignKey(
+        Account,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="inbound_savings",
+    )
+    amount = models.BigIntegerField()
+    start_date = models.DateField()
+    term_months = models.IntegerField(default=6)
+    interest_rate = models.DecimalField(max_digits=5, decimal_places=2)  # % / năm, ví dụ 6.00
+    payout_type = models.CharField(max_length=20, choices=PAYOUT_CHOICES, default="end_of_term")
+    is_settled = models.BooleanField(default=False)
+    settled_at = models.DateField(null=True, blank=True)
+    actual_interest = models.BigIntegerField(default=0)
+    settled_amount = models.BigIntegerField(default=0)
+    notes = models.CharField(max_length=255, blank=True, default="")
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["is_settled", "start_date"]
+        indexes = [
+            models.Index(fields=["user", "is_settled"]),
+        ]
+
+    def __str__(self):
+        return f"{self.bank_name}: {self.amount} ({self.term_months}M @ {self.interest_rate}%)"
+
+    @property
+    def maturity_date(self):
+        import calendar
+        month_idx = self.start_date.month - 1 + self.term_months
+        year = self.start_date.year + (month_idx // 12)
+        month = (month_idx % 12) + 1
+        day = min(self.start_date.day, calendar.monthrange(year, month)[1])
+        import datetime
+        return datetime.date(year, month, day)
+
+    @property
+    def estimated_interest(self):
+        # amount * (interest_rate / 100) * (term_months / 12)
+        return int(round(self.amount * (float(self.interest_rate) / 100.0) * (self.term_months / 12.0)))
+
 
