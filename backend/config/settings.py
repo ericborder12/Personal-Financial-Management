@@ -89,7 +89,11 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
 }
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip("/")
+FRONTEND_URL = (
+    os.getenv("FRONTEND_URL")
+    or (f"https://{os.getenv('VERCEL_URL')}" if os.getenv("VERCEL_URL") else None)
+    or ("https://personal-financial-management-three.vercel.app" if not DEBUG else "http://localhost:5173")
+).rstrip("/")
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
 EMAIL_USE_TLS = True
@@ -104,7 +108,12 @@ EMAIL_BACKEND = os.getenv(
     else "django.core.mail.backends.console.EmailBackend",
 )
 CORS_ALLOWED_ORIGINS = [
-    o for o in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173").split(",") if o
+    o
+    for o in os.getenv(
+        "CORS_ALLOWED_ORIGINS",
+        "http://localhost:5173,https://personal-financial-management-three.vercel.app",
+    ).split(",")
+    if o
 ]
 CORS_ALLOW_CREDENTIALS = True
 
