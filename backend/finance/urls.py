@@ -1,6 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+from .ai_views import AIQAView
 from .views import (
     AccountDetailView,
     AccountListCreateView,
@@ -41,4 +42,5 @@ urlpatterns = [
     path("budgets/<uuid:pk>/", BudgetDetailView.as_view(), name="budget-detail"),
     path("profile/", ProfileView.as_view(), name="profile"),
     path("import/", ImportView.as_view(), name="import-data"),
+    path("ai/qa/", AIQAView.as_view(), name="ai-qa"),
 ] + router.urls
