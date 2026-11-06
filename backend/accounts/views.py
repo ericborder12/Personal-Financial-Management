@@ -256,5 +256,5 @@ class CsrfView(APIView):
     authentication_classes = []
 
     def get(self, request):
-        get_token(request)
-        return Response({"detail": "CSRF cookie set"})
+        token = get_token(request)
+        return Response({"detail": "CSRF cookie set", "csrfToken": token})

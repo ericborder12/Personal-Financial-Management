@@ -14,6 +14,8 @@ export class ApiError extends Error {
   }
 }
 
+let memoryCsrfToken = null;
+
 function getCookie(name) {
   const prefix = `${name}=`;
   const item = document.cookie
@@ -23,10 +25,42 @@ function getCookie(name) {
   return item ? decodeURIComponent(item.slice(prefix.length)) : null;
 }
 
+function getCsrfToken() {
+  if (memoryCsrfToken) return memoryCsrfToken;
+  try {
+    const stored = sessionStorage.getItem("csrftoken");
+    if (stored) return stored;
+  } catch (_) {}
+  return getCookie("csrftoken");
+}
+
+function setCsrfToken(token) {
+  if (!token) return;
+  memoryCsrfToken = token;
+  try {
+    sessionStorage.setItem("csrftoken", token);
+  } catch (_) {}
+}
+
+function clearCsrfToken() {
+  memoryCsrfToken = null;
+  try {
+    sessionStorage.removeItem("csrftoken");
+  } catch (_) {}
+}
+
 async function fetchCsrf() {
   const res = await fetch(`${BASE}/auth/csrf/`, { credentials: "include" });
   if (!res.ok) {
     throw new ApiError(res.status, null);
+  }
+  const headerToken = res.headers.get("x-csrftoken") || res.headers.get("X-CSRFToken");
+  if (headerToken) {
+    setCsrfToken(headerToken);
+  }
+  const data = await res.json().catch(() => null);
+  if (data?.csrfToken) {
+    setCsrfToken(data.csrfToken);
   }
 }
 
@@ -37,10 +71,10 @@ export async function request(path, { method = "GET", body, retryCsrf = true } =
   }
 
   const unsafe = !["GET", "HEAD", "OPTIONS"].includes(method);
-  if (unsafe && !getCookie("csrftoken")) {
+  if (unsafe && !getCsrfToken()) {
     await fetchCsrf();
   }
-  const token = getCookie("csrftoken");
+  const token = getCsrfToken();
   if (unsafe && token) {
     headers["X-CSRFToken"] = token;
   }
@@ -52,9 +86,15 @@ export async function request(path, { method = "GET", body, retryCsrf = true } =
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
+  const responseCsrf = res.headers.get("x-csrftoken") || res.headers.get("X-CSRFToken");
+  if (responseCsrf) {
+    setCsrfToken(responseCsrf);
+  }
+
   // The CSRF cookie may have rotated (for example after login). Refresh and
   // retry once; a CSRF rejection happens before the view runs, so it is safe.
   if (unsafe && res.status === 403 && retryCsrf) {
+    clearCsrfToken();
     await fetchCsrf();
     return request(path, { method, body, retryCsrf: false });
   }
