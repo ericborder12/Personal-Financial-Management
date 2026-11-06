@@ -13,12 +13,19 @@ load_dotenv(BASE_DIR.parent / ".env")
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-insecure-key")
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
-ALLOWED_HOSTS = [h for h in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,.vercel.app").split(",") if h]
+ALLOWED_HOSTS = [
+    h
+    for h in os.getenv(
+        "ALLOWED_HOSTS",
+        "localhost,127.0.0.1,.vercel.app,.trycloudflare.com,.pages.dev",
+    ).split(",")
+    if h
+]
 CSRF_TRUSTED_ORIGINS = [
     o
     for o in os.getenv(
         "CSRF_TRUSTED_ORIGINS",
-        "http://localhost:5173,https://*.vercel.app,https://personal-financial-management-three.vercel.app",
+        "http://localhost:5173,https://*.vercel.app,https://personal-financial-management-three.vercel.app,https://*.trycloudflare.com,https://*.pages.dev",
     ).split(",")
     if o
 ]
@@ -115,6 +122,11 @@ CORS_ALLOWED_ORIGINS = [
     ).split(",")
     if o
 ]
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https:\/\/.*\.pages\.dev$",
+    r"^https:\/\/.*\.trycloudflare\.com$",
+    r"^https:\/\/.*\.vercel\.app$",
+]
 CORS_ALLOW_CREDENTIALS = True
 
 LANGUAGE_CODE = "vi"
@@ -127,9 +139,10 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-SESSION_COOKIE_SAMESITE = "Lax"
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "None" if not DEBUG else "Lax")
+CSRF_COOKIE_SAMESITE = os.getenv("CSRF_COOKIE_SAMESITE", "None" if not DEBUG else "Lax")
+SESSION_COOKIE_SECURE = True if SESSION_COOKIE_SAMESITE == "None" else not DEBUG
+CSRF_COOKIE_SECURE = True if CSRF_COOKIE_SAMESITE == "None" else not DEBUG
 SESSION_COOKIE_AGE = 1209600
 CSRF_COOKIE_HTTPONLY = False
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
