@@ -58,4 +58,11 @@ export const financeApi = {
   },
   setBudget: (data) => request("/finance/budgets/", { method: "POST", body: data }),
   deleteBudget: (id) => request(`/finance/budgets/${id}/`, { method: "DELETE" }),
+
+  // Savings Deposits
+  getSavings: () => request("/finance/savings/"),
+  createSaving: (data) => request("/finance/savings/", { method: "POST", body: data }),
+  updateSaving: (id, data) => request(`/finance/savings/${id}/`, { method: "PATCH", body: data }),
+  settleSaving: (id, data) => request(`/finance/savings/${id}/settle/`, { method: "POST", body: data }),
+  deleteSaving: (id) => request(`/finance/savings/${id}/`, { method: "DELETE" }),
 };

@@ -6,6 +6,8 @@ import AccountsPage from "./pages/AccountsPage";
 import CategoriesPage from "./pages/CategoriesPage";
 import BudgetsPage from "./pages/BudgetsPage";
 import ReportsPage from "./pages/ReportsPage";
+import SavingsPage from "./pages/SavingsPage";
+import QAPage from "./pages/QAPage";
 import TransactionModal from "./components/transactions/TransactionModal";
 import { useAuth } from "./auth/useAuth";
 import { useAccounts, useCategories } from "./hooks/useFinance";
@@ -62,6 +64,10 @@ export default function App() {
         <AccountsPage key={`accounts-${refreshTrigger}`} />
       )}
 
+      {activeTab === "savings" && (
+        <SavingsPage key={`savings-${refreshTrigger}`} />
+      )}
+
       {activeTab === "categories" && (
         <CategoriesPage key={`categories-${refreshTrigger}`} />
       )}
@@ -72,6 +78,10 @@ export default function App() {
 
       {activeTab === "reports" && (
         <ReportsPage key={`reports-${refreshTrigger}`} />
+      )}
+
+      {activeTab === "qa" && (
+        <QAPage key={`qa-${refreshTrigger}`} />
       )}
 
       {/* Global Quick Transaction Modal */}

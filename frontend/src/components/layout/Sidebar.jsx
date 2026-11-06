@@ -6,6 +6,8 @@ import {
   IconCategories,
   IconBudgets,
   IconReports,
+  IconVault,
+  IconSparkles,
   IconX,
 } from "../common/Icons";
 
@@ -13,9 +15,11 @@ const NAV_ITEMS = [
   { id: "dashboard", label: "Tổng quan", icon: IconDashboard },
   { id: "transactions", label: "Sổ giao dịch", icon: IconTransactions },
   { id: "accounts", label: "Tài khoản tiền", icon: IconAccounts },
+  { id: "savings", label: "Sổ tiết kiệm", icon: IconVault },
   { id: "categories", label: "Danh mục thu chi", icon: IconCategories },
   { id: "budgets", label: "Ngân sách tháng", icon: IconBudgets },
   { id: "reports", label: "Báo cáo & Phân tích", icon: IconReports },
+  { id: "qa", label: "Trợ lý AI & Hỏi đáp", icon: IconSparkles },
 ];
 
 export default function Sidebar({
