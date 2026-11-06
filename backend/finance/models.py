@@ -205,6 +205,13 @@ class SavingsDeposit(models.Model):
         blank=True,
         related_name="inbound_savings",
     )
+    transfer_transaction = models.ForeignKey(
+        Transaction,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="savings_deposit",
+    )
     amount = models.BigIntegerField()
     start_date = models.DateField()
     term_months = models.IntegerField(default=6)

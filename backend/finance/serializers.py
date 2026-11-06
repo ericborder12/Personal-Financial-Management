@@ -238,3 +238,16 @@ class SavingsDepositSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Tài khoản nguồn không hợp lệ.")
         return value
 
+    def update(self, instance, validated_data):
+        if instance.is_settled:
+            raise serializers.ValidationError("Không thể chỉnh sửa sổ tiết kiệm đã tất toán.")
+        # Core financial fields are immutable once created
+        validated_data.pop("amount", None)
+        validated_data.pop("bank_name", None)
+        validated_data.pop("source_account", None)
+        validated_data.pop("start_date", None)
+        validated_data.pop("term_months", None)
+        validated_data.pop("payout_type", None)
+        return super().update(instance, validated_data)
+
+

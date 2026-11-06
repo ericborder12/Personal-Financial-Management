@@ -146,21 +146,37 @@ def call_cloudflare_ai(messages, user):
 
     system_prompt = build_system_prompt(user)
 
-    formatted_messages = [{"role": "system", "content": system_prompt}]
+    # Filter out any client-injected 'system' prompts and keep only user/assistant messages
+    valid_messages = []
     for msg in messages:
-        if isinstance(msg, dict) and "role" in msg and "content" in msg:
-            formatted_messages.append({
+        if isinstance(msg, dict) and msg.get("role") in ("user", "assistant") and "content" in msg:
+            valid_messages.append({
                 "role": msg["role"],
                 "content": str(msg["content"]),
             })
+
+    # Window message history to the most recent 12 messages to fit context limits
+    recent_history = valid_messages[-12:]
+    formatted_messages = [{"role": "system", "content": system_prompt}] + recent_history
 
     payload = {"messages": formatted_messages}
     data = request_cloudflare_api(account_id, api_token, model, payload)
 
     # Cloudflare Workers AI returns { "result": { "response": "..." }, "success": true }
-    result = data.get("result", {})
-    if isinstance(result, dict) and "response" in result:
-        return result["response"]
-    elif isinstance(data, dict) and "response" in data:
-        return data["response"]
-    return str(result)
+    if isinstance(data, dict) and data.get("success") is False:
+        errs = data.get("errors") or []
+        err_msg = ", ".join(e.get("message", str(e)) if isinstance(e, dict) else str(e) for e in errs)
+        raise AIUpstreamError(f"Cloudflare Workers AI: {err_msg or 'Thao tác không thành công.'}")
+
+    result = data.get("result") if isinstance(data, dict) else None
+    response_text = None
+    if isinstance(result, dict):
+        response_text = result.get("response")
+    elif isinstance(data, dict):
+        response_text = data.get("response")
+
+    if not response_text:
+        raise AIUpstreamError("Không nhận được câu trả lời hợp lệ từ mô hình AI.")
+
+    return str(response_text)
+

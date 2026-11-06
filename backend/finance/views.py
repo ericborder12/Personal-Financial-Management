@@ -555,7 +555,11 @@ class SavingsDepositViewSet(viewsets.ModelViewSet):
     serializer_class = SavingsDepositSerializer
 
     def get_queryset(self):
-        return SavingsDeposit.objects.filter(user=self.request.user).order_by("is_settled", "start_date")
+        return (
+            SavingsDeposit.objects.filter(user=self.request.user)
+            .select_related("source_account", "savings_account", "transfer_transaction")
+            .order_by("is_settled", "start_date")
+        )
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -595,18 +599,28 @@ class SavingsDepositViewSet(viewsets.ModelViewSet):
                         "initial_balance": 0,
                     },
                 )
-            deposit = serializer.save(user=self.request.user, savings_account=savings_acc)
 
+            amount = serializer.validated_data.get("amount")
+            bank_name = serializer.validated_data.get("bank_name")
+            start_date = serializer.validated_data.get("start_date")
+
+            tx = None
             if source_acc and savings_acc:
-                Transaction.objects.create(
+                tx = Transaction.objects.create(
                     user=self.request.user,
                     type="transfer",
-                    amount=deposit.amount,
+                    amount=amount,
                     account=source_acc,
                     to_account=savings_acc,
-                    date=deposit.start_date,
-                    note=f"Gửi tiết kiệm: {deposit.bank_name}",
+                    date=start_date,
+                    note=f"Gửi tiết kiệm: {bank_name}",
                 )
+
+            serializer.save(
+                user=self.request.user,
+                savings_account=savings_acc,
+                transfer_transaction=tx,
+            )
 
     @action(detail=True, methods=["post"])
     def settle(self, request, pk=None):
@@ -680,14 +694,8 @@ class SavingsDepositViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         with transaction.atomic():
-            if not instance.is_settled and instance.source_account and instance.savings_account:
-                Transaction.objects.filter(
-                    user=self.request.user,
-                    type="transfer",
-                    account=instance.source_account,
-                    to_account=instance.savings_account,
-                    amount=instance.amount,
-                    note=f"Gửi tiết kiệm: {instance.bank_name}",
-                ).delete()
+            if not instance.is_settled and instance.transfer_transaction:
+                instance.transfer_transaction.delete()
             instance.delete()
+
 
