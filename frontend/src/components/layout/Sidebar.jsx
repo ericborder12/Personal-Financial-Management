@@ -9,6 +9,8 @@ import {
   IconVault,
   IconSparkles,
   IconX,
+  IconShield,
+  IconArrowUpRight,
 } from "../common/Icons";
 
 const NAV_ITEMS = [
@@ -109,6 +111,29 @@ export default function Sidebar({
               </button>
             );
           })}
+
+          {/* Dành riêng cho Quản trị viên (Staff / Superuser) */}
+          {(user?.is_staff || user?.is_superuser) && (
+            <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="px-3.5 py-1.5 text-[11px] font-bold tracking-wider text-rose-500 uppercase flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
+                <span>Quyền Quản Trị</span>
+              </div>
+              <a
+                href="/admin/finance/aisecurityalert/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group cursor-pointer flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-bold text-rose-600 bg-rose-50/80 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-400 dark:hover:bg-rose-950/70 border border-rose-200/80 dark:border-rose-900/60 transition-all shadow-xs"
+                title="Mở Bảng điều khiển Quản trị & Cảnh báo an toàn hệ thống"
+              >
+                <div className="flex items-center gap-2.5">
+                  <IconShield className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                  <span className="truncate">Cảnh báo & Quản trị</span>
+                </div>
+                <IconArrowUpRight className="w-3.5 h-3.5 text-rose-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              </a>
+            </div>
+          )}
         </nav>
 
         {/* User Profile Card & Footer Info */}

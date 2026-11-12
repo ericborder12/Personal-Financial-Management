@@ -322,19 +322,109 @@ def _call_groq_flow(messages, user, api_key):
     return str(request_groq_api(api_key, model, system_prompt, recent_history))
 
 
+def send_security_alert_email(user, prompt, reason):
+    try:
+        from django.core.mail import send_mail
+        from django.conf import settings
+        from django.utils import timezone
+        from accounts.models import User
+
+        admin_emails = list(
+            User.objects.filter(is_superuser=True, is_active=True).values_list("email", flat=True)
+        )
+        if not admin_emails and settings.DEFAULT_FROM_EMAIL:
+            admin_emails = [settings.DEFAULT_FROM_EMAIL]
+
+        if not admin_emails:
+            return
+
+        now_str = timezone.now().strftime("%d/%m/%Y %H:%M:%S")
+        subject = f"🚨 [CẢNH BÁO BẢO MẬT] Phát hiện truy vấn AI bất thường từ {user.email}"
+        user_display = getattr(user, "display_name", "") or user.email
+        frontend_url = getattr(settings, "FRONTEND_URL", "https://personal-financial-management-three.vercel.app")
+        admin_link = f"{frontend_url}/admin/finance/aisecurityalert/"
+
+        message = (
+            f"Hệ thống FinanceFlow phát hiện một truy vấn có dấu hiệu thăm dò bảo mật:\n\n"
+            f"- Tài khoản: {user_display} ({user.email})\n"
+            f"- Lý do: {reason}\n"
+            f"- Thời gian: {now_str} (UTC)\n\n"
+            f"- Nội dung truy vấn:\n\"{prompt}\"\n\n"
+            f"Truy vấn đã bị chặn tự động ở tầng tiền kiểm duyệt.\n"
+            f"Xem chi tiết tại: {admin_link}\n"
+        )
+
+        html_message = f"""<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f8fafc; padding: 20px;">
+  <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden;">
+    <div style="background: #dc2626; padding: 20px; text-align: center; color: #ffffff;">
+      <h2 style="margin: 0; font-size: 20px;">🚨 Cảnh Báo An Toàn Hệ Thống</h2>
+      <p style="margin: 5px 0 0; font-size: 13px; opacity: 0.9;">Phát hiện hành vi thăm dò bảo mật trên FinanceFlow</p>
+    </div>
+    <div style="padding: 24px;">
+      <p style="margin-top: 0;">Xin chào <strong>Quản trị viên</strong>,</p>
+      <p>Hệ thống AI Guardrails vừa tự động ngăn chặn một truy vấn có dấu hiệu vi phạm chính sách an toàn:</p>
+      
+      <div style="background: #f1f5f9; border-left: 4px solid #dc2626; padding: 12px 16px; margin: 16px 0; border-radius: 4px;">
+        <p style="margin: 0 0 8px;"><strong>Tài khoản người dùng:</strong> {user.email}</p>
+        <p style="margin: 0 0 8px;"><strong>Hành vi phát hiện:</strong> {reason}</p>
+        <p style="margin: 0;"><strong>Thời gian:</strong> {now_str} UTC</p>
+      </div>
+
+      <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; padding: 16px; margin: 16px 0;">
+        <span style="font-size: 12px; font-weight: bold; color: #9f1239; text-transform: uppercase;">Nội dung câu lệnh vi phạm:</span>
+        <p style="margin: 8px 0 0; font-size: 14px; color: #be123c; font-family: monospace; word-break: break-all;">
+          "{prompt}"
+        </p>
+      </div>
+
+      <p style="font-size: 13px; color: #64748b;">
+        ✅ <strong>Trạng thái:</strong> Truy vấn đã bị từ chối ngay lập tức ở tầng Python và không chuyển tiếp tới LLM (tiết kiệm token và không lộ dữ liệu hệ thống).
+      </p>
+
+      <div style="margin-top: 24px; text-align: center;">
+        <a href="{admin_link}" 
+           style="display: inline-block; background: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px;">
+          Xem Chi Tiết Trong Trang Quản Trị
+        </a>
+      </div>
+    </div>
+    <div style="background: #f8fafc; padding: 12px 24px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; text-align: center;">
+      FinanceFlow Security Bot • Tự động gửi cảnh báo bảo mật thời gian thực
+    </div>
+  </div>
+</body>
+</html>"""
+
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=admin_emails,
+            fail_silently=True,
+            html_message=html_message,
+        )
+    except Exception as exc:
+        logger.warning("Failed to send security alert email: %s", exc)
+
+
 def call_ai(messages, user):
     # 0. Security Pre-screening: Detect attempts to probe API keys, system prompts, or credentials
     latest_user_msg = next((m.get("content", "") for m in reversed(messages) if isinstance(m, dict) and m.get("role") == "user"), "")
     if check_security_probe(latest_user_msg):
+        reason = "Nghi vấn cố gắng khai thác API Key / System Prompt / Thăm dò bảo mật"
         try:
             from .models import AISecurityAlert
             AISecurityAlert.objects.create(
                 user=user,
                 prompt=latest_user_msg,
-                reason="Nghi vấn cố gắng khai thác API Key / System Prompt / Thăm dò bảo mật",
+                reason=reason,
             )
         except Exception:
             pass
+
+        send_security_alert_email(user, latest_user_msg, reason)
 
         return (
             "⚠️ Yêu cầu của bạn đã bị từ chối do vi phạm chính sách bảo mật và an toàn hệ thống của FinanceFlow. "

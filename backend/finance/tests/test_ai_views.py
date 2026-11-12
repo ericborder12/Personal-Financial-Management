@@ -248,6 +248,8 @@ def test_ai_qa_gemini_fallback_on_404():
 @pytest.mark.django_db
 def test_ai_qa_security_probe_blocked_and_alert_created():
     from finance.models import AISecurityAlert
+    from django.core import mail
+    admin_user = User.objects.create_superuser(email="superadmin@finance.test", password="adminpass123")
     user = User.objects.create_user(email="hacker@finance.test", password="pass")
     client = APIClient()
     client.force_authenticate(user=user)
@@ -270,5 +272,12 @@ def test_ai_qa_security_probe_blocked_and_alert_created():
         alert = AISecurityAlert.objects.filter(user=user).first()
         assert alert is not None
         assert probe_message in alert.prompt
+
+        # Verify alert email was sent to superadmin
+        assert len(mail.outbox) >= 1
+        assert "superadmin@finance.test" in mail.outbox[0].to
+        assert "CẢNH BÁO BẢO MẬT" in mail.outbox[0].subject
+        assert "hacker@finance.test" in mail.outbox[0].body
+
 
 
