@@ -32,6 +32,12 @@ export function AuthProvider({ children }) {
     return me;
   };
 
+  const googleLogin = async (credential, remember_me = false) => {
+    const me = await api.googleLogin({ credential, remember_me });
+    setUser(me);
+    return me;
+  };
+
   const register = async (email, password, display_name) => {
     return api.register({ email, password, display_name });
   };
@@ -62,6 +68,7 @@ export function AuthProvider({ children }) {
         user,
         loading: user === undefined,
         login,
+        googleLogin,
         register,
         logout,
         updateProfile,

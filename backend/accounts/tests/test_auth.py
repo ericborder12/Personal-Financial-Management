@@ -323,3 +323,67 @@ def test_change_password_weak_new_password(api_client):
     )
     assert res.status_code == 400
     assert "new_password" in res.json()
+
+
+@pytest.mark.django_db
+def test_google_login_missing_credential(api_client):
+    res = api_client.post("/api/auth/google/", {}, format="json")
+    assert res.status_code == 400
+    assert "Thiếu mã xác thực Google" in res.json().get("detail", "")
+
+
+@pytest.mark.django_db
+def test_google_login_invalid_credential(api_client, monkeypatch):
+    monkeypatch.setattr("accounts.views.verify_google_id_token", lambda token: None)
+    res = api_client.post("/api/auth/google/", {"credential": "invalid-token"}, format="json")
+    assert res.status_code == 400
+    assert "không hợp lệ" in res.json().get("detail", "")
+
+
+@pytest.mark.django_db
+def test_google_login_new_user_success(api_client, monkeypatch):
+    fake_google_data = {
+        "email": "newgoogleuser@gmail.com",
+        "name": "Minh Quân",
+        "email_verified": True,
+        "iss": "https://accounts.google.com",
+        "aud": "mock-client-id",
+    }
+    monkeypatch.setattr("accounts.views.verify_google_id_token", lambda token: fake_google_data)
+
+    res = api_client.post(
+        "/api/auth/google/",
+        {"credential": "valid-token", "remember_me": True},
+        format="json",
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["email"] == "newgoogleuser@gmail.com"
+    assert data["display_name"] == "Minh Quân"
+
+    user = User.objects.get(email="newgoogleuser@gmail.com")
+    assert user.is_active is True
+    assert api_client.get("/api/auth/me/").status_code == 200
+    assert api_client.session.get_expire_at_browser_close() is False
+
+
+@pytest.mark.django_db
+def test_google_login_existing_inactive_user(api_client, monkeypatch):
+    user = User.objects.create_user(email="existing@gmail.com", password="pwd", is_active=False)
+    fake_google_data = {
+        "email": "existing@gmail.com",
+        "name": "Existing User",
+        "email_verified": True,
+    }
+    monkeypatch.setattr("accounts.views.verify_google_id_token", lambda token: fake_google_data)
+
+    res = api_client.post(
+        "/api/auth/google/",
+        {"credential": "valid-token", "remember_me": False},
+        format="json",
+    )
+    assert res.status_code == 200
+    user.refresh_from_db()
+    assert user.is_active is True
+    assert api_client.session.get_expire_at_browser_close() is True
+

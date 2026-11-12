@@ -129,6 +129,7 @@ export const api = {
   changePassword: (data) => request("/auth/change-password/", { method: "POST", body: data }),
   register: (data) => request("/auth/register/", { method: "POST", body: data }),
   login: (data) => request("/auth/login/", { method: "POST", body: data }),
+  googleLogin: (data) => request("/auth/google/", { method: "POST", body: data }),
   logout: () => request("/auth/logout/", { method: "POST" }),
   verifyEmail: (data) => request("/auth/verify-email/", { method: "POST", body: data }),
   resendVerificationEmail: (data) =>

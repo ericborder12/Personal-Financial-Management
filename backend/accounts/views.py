@@ -1,4 +1,7 @@
+import json
 import smtplib
+import urllib.parse
+import urllib.request
 from urllib.parse import urlencode
 
 from django.conf import settings
@@ -148,6 +151,86 @@ class LoginView(APIView):
             request.session.set_expiry(settings.SESSION_COOKIE_AGE)
         else:
             request.session.set_expiry(0)
+        return Response(UserSerializer(user).data)
+
+
+def verify_google_id_token(id_token):
+    if not id_token or not isinstance(id_token, str):
+        return None
+    url = f"https://oauth2.googleapis.com/tokeninfo?id_token={urllib.parse.quote(id_token)}"
+    req = urllib.request.Request(url, headers={"User-Agent": "FinanceFlow-Server"})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            if resp.status != 200:
+                return None
+            data = json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        return None
+
+    if data.get("iss") not in ("accounts.google.com", "https://accounts.google.com"):
+        return None
+
+    expected_client_id = getattr(settings, "GOOGLE_CLIENT_ID", "").strip()
+    if expected_client_id and data.get("aud") != expected_client_id:
+        return None
+
+    email = data.get("email")
+    if not email:
+        return None
+
+    email_verified = data.get("email_verified")
+    if email_verified not in (True, "true", "True", 1):
+        return None
+
+    return data
+
+
+class GoogleLoginView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = [CsrfEnforcingSessionAuthentication]
+
+    def post(self, request):
+        credential = request.data.get("credential", "")
+        if not credential:
+            return Response(
+                {"detail": "Thiếu mã xác thực Google (credential)."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        google_data = verify_google_id_token(credential)
+        if not google_data:
+            return Response(
+                {"detail": "Mã xác thực Google không hợp lệ hoặc đã hết hạn."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        email = google_data.get("email", "").lower().strip()
+        name = google_data.get("name", "").strip() or google_data.get("given_name", "").strip()
+
+        with transaction.atomic():
+            user = User.objects.filter(email__iexact=email).first()
+            if user is None:
+                user = User.objects.create_user(
+                    email=email,
+                    display_name=name or email.split("@")[0],
+                    is_active=True,
+                )
+            else:
+                if not user.is_active:
+                    user.is_active = True
+                    user.save(update_fields=["is_active"])
+                if not user.display_name and name:
+                    user.display_name = name
+                    user.save(update_fields=["display_name"])
+
+        remember_me = request.data.get("remember_me")
+        is_remember = remember_me in (True, 1, "true", "True", "1")
+        login(request, user)
+        if is_remember:
+            request.session.set_expiry(settings.SESSION_COOKIE_AGE)
+        else:
+            request.session.set_expiry(0)
+
         return Response(UserSerializer(user).data)
 
 
