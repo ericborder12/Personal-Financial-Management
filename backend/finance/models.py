@@ -249,3 +249,19 @@ class SavingsDeposit(models.Model):
         return int(round(self.amount * (float(self.interest_rate) / 100.0) * (self.term_months / 12.0)))
 
 
+class AISecurityAlert(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="ai_security_alerts")
+    prompt = models.TextField()
+    reason = models.CharField(max_length=150)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Cảnh báo bảo mật AI"
+        verbose_name_plural = "Cảnh báo bảo mật AI"
+
+    def __str__(self):
+        return f"[{self.created_at:%d/%m/%Y %H:%M}] {self.user.email} - {self.reason}"
+
+
+
