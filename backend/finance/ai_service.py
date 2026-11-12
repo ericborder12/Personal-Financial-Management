@@ -275,17 +275,13 @@ def _call_groq_flow(messages, user, api_key):
 
 
 def call_ai(messages, user):
-    provider = clean_env(os.environ.get("AI_PROVIDER", "auto")).lower()
+    provider = clean_env(os.environ.get("AI_PROVIDER", "gemini")).lower()
     cf_account_id = clean_env(os.environ.get("CLOUDFLARE_ACCOUNT_ID"))
     cf_api_token = clean_env(os.environ.get("CLOUDFLARE_API_TOKEN"))
     gemini_key = clean_env(os.environ.get("GEMINI_API_KEY"))
     groq_key = clean_env(os.environ.get("GROQ_API_KEY"))
 
-    if provider == "gemini":
-        if not gemini_key:
-            raise AIConfigurationError("Chưa cấu hình GEMINI_API_KEY trong biến môi trường.")
-        return _call_gemini_flow(messages, user, gemini_key)
-    elif provider == "groq":
+    if provider == "groq":
         if not groq_key:
             raise AIConfigurationError("Chưa cấu hình GROQ_API_KEY trong biến môi trường.")
         return _call_groq_flow(messages, user, groq_key)
@@ -296,25 +292,27 @@ def call_ai(messages, user):
             )
         return _call_cloudflare_flow(messages, user, cf_account_id, cf_api_token)
 
-    # Auto mode: Priority 1 is Cloudflare Workers AI (Teacher's requirement)
-    if cf_account_id and cf_api_token:
+    # Provider is "gemini" or "auto" - Default to Gemini
+    if gemini_key:
         try:
-            return _call_cloudflare_flow(messages, user, cf_account_id, cf_api_token)
-        except Exception as cf_err:
-            if gemini_key:
-                return _call_gemini_flow(messages, user, gemini_key)
+            return _call_gemini_flow(messages, user, gemini_key)
+        except Exception as gemini_err:
+            if cf_account_id and cf_api_token:
+                return _call_cloudflare_flow(messages, user, cf_account_id, cf_api_token)
             elif groq_key:
                 return _call_groq_flow(messages, user, groq_key)
-            raise cf_err
+            raise gemini_err
 
-    if gemini_key:
-        return _call_gemini_flow(messages, user, gemini_key)
-    elif groq_key:
+    # Fallback to Cloudflare if Gemini key is missing
+    if cf_account_id and cf_api_token:
+        return _call_cloudflare_flow(messages, user, cf_account_id, cf_api_token)
+
+    if groq_key:
         return _call_groq_flow(messages, user, groq_key)
 
     raise AIConfigurationError(
-        "Chưa cấu hình CLOUDFLARE_ACCOUNT_ID hoặc CLOUDFLARE_API_TOKEN trong file .env của backend. "
-        "Vui lòng thêm thông tin tài khoản Cloudflare Workers AI (hoặc GEMINI_API_KEY / GROQ_API_KEY) để kích hoạt tính năng này."
+        "Chưa cấu hình GEMINI_API_KEY trong biến môi trường. "
+        "Vui lòng thêm GEMINI_API_KEY từ Google AI Studio (hoặc CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_API_TOKEN) để kích hoạt tính năng Trợ lý AI."
     )
 
 

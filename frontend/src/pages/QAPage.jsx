@@ -179,7 +179,7 @@ export default function QAPage() {
                 Trợ lý AI & Hỏi đáp
               </h1>
               <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
-                Cloudflare AI LLM
+                Google Gemini AI
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -196,21 +196,20 @@ export default function QAPage() {
         </button>
       </div>
 
-      {/* Cloudflare Setup Warning Banner if unconfigured */}
+      {/* AI Setup Warning Banner if unconfigured */}
       {configError && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-900/60 dark:bg-amber-950/40 shrink-0">
           <div className="flex items-start gap-3">
             <span className="text-xl">⚠️</span>
             <div className="text-xs space-y-1 text-amber-900 dark:text-amber-200">
-              <p className="font-bold text-sm">Chưa kích hoạt Cloudflare Workers AI</p>
+              <p className="font-bold text-sm">Chưa kích hoạt Trợ lý AI (Google Gemini)</p>
               <p>{configError}</p>
               <p className="text-slate-600 dark:text-slate-400 mt-1">
-                Hướng dẫn cấu hình: Mở file <code className="font-mono bg-white/70 px-1.5 py-0.5 rounded dark:bg-slate-900">backend/.env</code> và thêm:
+                Hướng dẫn cấu hình: Thêm biến môi trường vào <code className="font-mono bg-white/70 px-1.5 py-0.5 rounded dark:bg-slate-900">.env</code> hoặc Vercel:
               </p>
               <pre className="mt-1 bg-white/90 p-2 rounded-lg font-mono text-[11px] text-slate-800 dark:bg-slate-900 dark:text-slate-200 overflow-x-auto">
-{`CLOUDFLARE_ACCOUNT_ID=your_account_id
-CLOUDFLARE_API_TOKEN=your_api_token
-CLOUDFLARE_AI_MODEL=@cf/meta/llama-3.1-8b-instruct`}
+{`GEMINI_API_KEY=your_gemini_api_key
+GEMINI_AI_MODEL=gemini-1.5-flash`}
               </pre>
             </div>
           </div>

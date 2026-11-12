@@ -27,7 +27,7 @@ def test_ai_qa_missing_credentials():
         )
         assert res.status_code == 503
         data = res.json()
-        assert "CLOUDFLARE_ACCOUNT_ID" in data.get("detail", "") or "CLOUDFLARE_API_TOKEN" in data.get("detail", "")
+        assert "GEMINI_API_KEY" in data.get("detail", "") or "CLOUDFLARE_ACCOUNT_ID" in data.get("detail", "")
 
 
 @pytest.mark.django_db
@@ -188,6 +188,27 @@ def test_ai_qa_sanitizes_quoted_cloudflare_env():
             assert captured_args["account_id"] == "quoted-acc-id"
             assert captured_args["api_token"] == "quoted-api-token"
             assert captured_args["model"] == "@cf/meta/llama-3.1-8b-instruct"
+
+
+@pytest.mark.django_db
+def test_ai_qa_gemini_primary():
+    user = User.objects.create_user(email="ai_gemini_pri@finance.test", password="pass")
+    client = APIClient()
+    client.force_authenticate(user=user)
+
+    fake_env = {
+        "GEMINI_API_KEY": "test-gemini-key",
+    }
+
+    with patch.dict("os.environ", fake_env):
+        with patch("finance.ai_service.request_gemini_api", return_value="Gemini primary reply"):
+            res = client.post(
+                "/api/finance/ai/qa/",
+                {"messages": [{"role": "user", "content": "Hello"}]},
+                format="json",
+            )
+            assert res.status_code == 200
+            assert res.json()["reply"] == "Gemini primary reply"
 
 
 @pytest.mark.django_db
