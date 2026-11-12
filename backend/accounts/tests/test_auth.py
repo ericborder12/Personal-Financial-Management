@@ -76,6 +76,32 @@ def test_login_and_logout(api_client):
 
 
 @pytest.mark.django_db
+def test_login_session_expiry_default_is_browser_close(api_client):
+    User.objects.create_user(email="browser_close@example.com", password="strongpass123")
+    res = api_client.post(
+        "/api/auth/login/",
+        {"email": "browser_close@example.com", "password": "strongpass123", "remember_me": False},
+        format="json",
+    )
+    assert res.status_code == 200
+    assert api_client.session.get_expire_at_browser_close() is True
+
+
+@pytest.mark.django_db
+def test_login_session_expiry_with_remember_me(api_client):
+    User.objects.create_user(email="remember@example.com", password="strongpass123")
+    res = api_client.post(
+        "/api/auth/login/",
+        {"email": "remember@example.com", "password": "strongpass123", "remember_me": True},
+        format="json",
+    )
+    assert res.status_code == 200
+    assert api_client.session.get_expire_at_browser_close() is False
+    assert api_client.session.get_expiry_age() == settings.SESSION_COOKIE_AGE
+
+
+
+@pytest.mark.django_db
 def test_email_verification_enables_login(api_client):
     register(api_client)
     user = User.objects.get(email="a@example.com")

@@ -26,6 +26,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [error, setError] = useState("");
@@ -87,7 +88,7 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       if (flow === "login") {
-        await login(email.trim(), password);
+        await login(email.trim(), password, rememberMe);
       } else if (flow === "register") {
         const result = await register(email.trim(), password, displayName.trim());
         setNotice(result.detail || "Đăng ký thành công! Vui lòng kiểm tra email để kích hoạt tài khoản.");
@@ -265,20 +266,9 @@ export default function LoginPage() {
               {/* Password */}
               {flow !== "forgot" && (
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                      Mật khẩu
-                    </label>
-                    {flow === "login" && (
-                      <button
-                        type="button"
-                        onClick={() => switchFlow("forgot")}
-                        className="cursor-pointer text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                      >
-                        Quên mật khẩu?
-                      </button>
-                    )}
-                  </div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Mật khẩu
+                  </label>
                   <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
@@ -303,6 +293,29 @@ export default function LoginPage() {
                     <span className="mt-1.5 block text-[11px] text-slate-400 dark:text-slate-500">
                       Tối thiểu 8 ký tự, gồm cả chữ và số để tăng độ an toàn.
                     </span>
+                  )}
+                  {flow === "login" && (
+                    <div className="flex items-center justify-between pt-2.5">
+                      <label className="flex items-center gap-2 cursor-pointer select-none group">
+                        <input
+                          type="checkbox"
+                          checked={rememberMe}
+                          onChange={(e) => setRememberMe(e.target.checked)}
+                          className="h-4 w-4 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800 dark:checked:bg-blue-600 transition-colors cursor-pointer"
+                        />
+                        <span className="text-xs font-medium text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                          Lưu phiên đăng nhập
+                        </span>
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => switchFlow("forgot")}
+                        className="cursor-pointer text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                      >
+                        Quên mật khẩu?
+                      </button>
+                    </div>
                   )}
                 </div>
               )}

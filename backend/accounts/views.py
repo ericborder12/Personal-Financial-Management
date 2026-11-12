@@ -141,7 +141,13 @@ class LoginView(APIView):
                 {"detail": "Email hoặc mật khẩu không đúng."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        remember_me = request.data.get("remember_me")
+        is_remember = remember_me in (True, 1, "true", "True", "1")
         login(request, user)
+        if is_remember:
+            request.session.set_expiry(settings.SESSION_COOKIE_AGE)
+        else:
+            request.session.set_expiry(0)
         return Response(UserSerializer(user).data)
 
 
