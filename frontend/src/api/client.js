@@ -30,7 +30,9 @@ function getCsrfToken() {
   try {
     const stored = sessionStorage.getItem("csrftoken");
     if (stored) return stored;
-  } catch (_) {}
+  } catch {
+    /* ignore session storage errors */
+  }
   return getCookie("csrftoken");
 }
 
@@ -39,14 +41,18 @@ function setCsrfToken(token) {
   memoryCsrfToken = token;
   try {
     sessionStorage.setItem("csrftoken", token);
-  } catch (_) {}
+  } catch {
+    /* ignore session storage errors */
+  }
 }
 
 function clearCsrfToken() {
   memoryCsrfToken = null;
   try {
     sessionStorage.removeItem("csrftoken");
-  } catch (_) {}
+  } catch {
+    /* ignore session storage errors */
+  }
 }
 
 async function fetchCsrf() {
