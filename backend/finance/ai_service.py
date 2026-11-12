@@ -147,7 +147,7 @@ def request_cloudflare_api(account_id, api_token, model, payload):
 
 def request_gemini_api(api_key, model, system_prompt, messages):
     api_key = clean_env(api_key)
-    model = clean_env(model, "gemini-1.5-flash")
+    model = clean_env(model, "gemini-flash-lite-latest")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
     contents = []
@@ -172,7 +172,7 @@ def request_gemini_api(api_key, model, system_prompt, messages):
         method="POST",
     )
     try:
-        with urllib.request.urlopen(req, timeout=35) as response:
+        with urllib.request.urlopen(req, timeout=25) as response:
             res_data = response.read().decode("utf-8")
             data = json.loads(res_data)
             candidates = data.get("candidates") or []
@@ -261,10 +261,16 @@ def _call_cloudflare_flow(messages, user, account_id, api_token):
 
 
 def _call_gemini_flow(messages, user, api_key):
-    model = clean_env(os.environ.get("GEMINI_AI_MODEL"), "gemini-1.5-flash")
+    model = clean_env(os.environ.get("GEMINI_AI_MODEL"), "gemini-flash-lite-latest")
     system_prompt = build_system_prompt(user)
     recent_history = _extract_valid_messages(messages)
-    return str(request_gemini_api(api_key, model, system_prompt, recent_history))
+    try:
+        return str(request_gemini_api(api_key, model, system_prompt, recent_history))
+    except AIUpstreamError as e:
+        # If gemini-flash-lite-latest is not available, try gemini-flash-latest
+        if "404" in str(e) or "not found" in str(e).lower():
+            return str(request_gemini_api(api_key, "gemini-flash-latest", system_prompt, recent_history))
+        raise e
 
 
 def _call_groq_flow(messages, user, api_key):
@@ -275,7 +281,7 @@ def _call_groq_flow(messages, user, api_key):
 
 
 def call_ai(messages, user):
-    provider = clean_env(os.environ.get("AI_PROVIDER", "gemini")).lower()
+    provider = clean_env(os.environ.get("AI_PROVIDER", "auto")).lower()
     cf_account_id = clean_env(os.environ.get("CLOUDFLARE_ACCOUNT_ID"))
     cf_api_token = clean_env(os.environ.get("CLOUDFLARE_API_TOKEN"))
     gemini_key = clean_env(os.environ.get("GEMINI_API_KEY"))
@@ -291,22 +297,21 @@ def call_ai(messages, user):
                 "Chưa cấu hình CLOUDFLARE_ACCOUNT_ID hoặc CLOUDFLARE_API_TOKEN trong biến môi trường."
             )
         return _call_cloudflare_flow(messages, user, cf_account_id, cf_api_token)
+    elif provider == "gemini":
+        if not gemini_key:
+            raise AIConfigurationError("Chưa cấu hình GEMINI_API_KEY trong biến môi trường.")
+        return _call_gemini_flow(messages, user, gemini_key)
 
-    # Provider is "gemini" or "auto" - Default to Gemini
+    # Auto mode:
+    # 1. Gemini if key is provided
     if gemini_key:
-        try:
-            return _call_gemini_flow(messages, user, gemini_key)
-        except Exception as gemini_err:
-            if cf_account_id and cf_api_token:
-                return _call_cloudflare_flow(messages, user, cf_account_id, cf_api_token)
-            elif groq_key:
-                return _call_groq_flow(messages, user, groq_key)
-            raise gemini_err
+        return _call_gemini_flow(messages, user, gemini_key)
 
-    # Fallback to Cloudflare if Gemini key is missing
+    # 2. Cloudflare if credentials are provided
     if cf_account_id and cf_api_token:
         return _call_cloudflare_flow(messages, user, cf_account_id, cf_api_token)
 
+    # 3. Groq if key is provided
     if groq_key:
         return _call_groq_flow(messages, user, groq_key)
 

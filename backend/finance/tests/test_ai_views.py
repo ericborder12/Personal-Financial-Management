@@ -104,6 +104,7 @@ def test_ai_qa_windowing_and_role_filtering():
         return {"result": {"response": "OK"}, "success": True}
 
     fake_env = {
+        "AI_PROVIDER": "cloudflare",
         "CLOUDFLARE_ACCOUNT_ID": "mock-acc-id",
         "CLOUDFLARE_API_TOKEN": "mock-token",
     }
@@ -134,6 +135,7 @@ def test_ai_qa_cloudflare_error_handling():
     client.force_authenticate(user=user)
 
     fake_env = {
+        "AI_PROVIDER": "cloudflare",
         "CLOUDFLARE_ACCOUNT_ID": "mock-acc-id",
         "CLOUDFLARE_API_TOKEN": "mock-token",
     }
@@ -172,6 +174,7 @@ def test_ai_qa_sanitizes_quoted_cloudflare_env():
         return {"result": {"response": "Cleaned response"}, "success": True}
 
     fake_env = {
+        "AI_PROVIDER": "cloudflare",
         "CLOUDFLARE_ACCOUNT_ID": ' "quoted-acc-id" ',
         "CLOUDFLARE_API_TOKEN": " 'quoted-api-token' ",
         "CLOUDFLARE_AI_MODEL": ' "@cf/meta/llama-3.1-8b-instruct" ',
@@ -212,26 +215,32 @@ def test_ai_qa_gemini_primary():
 
 
 @pytest.mark.django_db
-def test_ai_qa_gemini_fallback():
+def test_ai_qa_gemini_fallback_on_404():
     user = User.objects.create_user(email="ai_gemini@finance.test", password="pass")
     client = APIClient()
     client.force_authenticate(user=user)
 
     fake_env = {
-        "CLOUDFLARE_ACCOUNT_ID": "mock-acc-id",
-        "CLOUDFLARE_API_TOKEN": "mock-token",
         "GEMINI_API_KEY": "mock-gemini-key",
     }
 
-    # Cloudflare fails with 401 Authentication error
+    call_count = 0
+    def mock_gemini(api_key, model, system_prompt, messages):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            from finance.ai_service import AIUpstreamError
+            raise AIUpstreamError("Gemini API Error (404): models/gemini-flash-lite-latest not found")
+        return "Gemini fallback reply"
+
     with patch.dict("os.environ", fake_env):
-        with patch("finance.ai_service.request_cloudflare_api", side_effect=Exception("Cloudflare AI API Error (401)")):
-            with patch("finance.ai_service.request_gemini_api", return_value="Gemini fallback reply"):
-                res = client.post(
-                    "/api/finance/ai/qa/",
-                    {"messages": [{"role": "user", "content": "Help me"}]},
-                    format="json",
-                )
-                assert res.status_code == 200
-                assert res.json()["reply"] == "Gemini fallback reply"
+        with patch("finance.ai_service.request_gemini_api", side_effect=mock_gemini):
+            res = client.post(
+                "/api/finance/ai/qa/",
+                {"messages": [{"role": "user", "content": "Help me"}]},
+                format="json",
+            )
+            assert res.status_code == 200
+            assert res.json()["reply"] == "Gemini fallback reply"
+            assert call_count == 2
 
