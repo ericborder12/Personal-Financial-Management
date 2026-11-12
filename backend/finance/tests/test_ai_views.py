@@ -155,3 +155,62 @@ def test_ai_qa_cloudflare_error_handling():
             assert res.status_code == 502
             assert "Rate limit exceeded" in res.json().get("detail", "")
 
+
+@pytest.mark.django_db
+def test_ai_qa_sanitizes_quoted_cloudflare_env():
+    user = User.objects.create_user(email="ai_quotes@finance.test", password="pass")
+    client = APIClient()
+    client.force_authenticate(user=user)
+
+    captured_args = {}
+
+    def mock_cf_api(account_id, api_token, model, payload):
+        nonlocal captured_args
+        captured_args["account_id"] = account_id
+        captured_args["api_token"] = api_token
+        captured_args["model"] = model
+        return {"result": {"response": "Cleaned response"}, "success": True}
+
+    fake_env = {
+        "CLOUDFLARE_ACCOUNT_ID": ' "quoted-acc-id" ',
+        "CLOUDFLARE_API_TOKEN": " 'quoted-api-token' ",
+        "CLOUDFLARE_AI_MODEL": ' "@cf/meta/llama-3.1-8b-instruct" ',
+    }
+
+    with patch.dict("os.environ", fake_env):
+        with patch("finance.ai_service.request_cloudflare_api", side_effect=mock_cf_api):
+            res = client.post(
+                "/api/finance/ai/qa/",
+                {"messages": [{"role": "user", "content": "Hello"}]},
+                format="json",
+            )
+            assert res.status_code == 200
+            assert captured_args["account_id"] == "quoted-acc-id"
+            assert captured_args["api_token"] == "quoted-api-token"
+            assert captured_args["model"] == "@cf/meta/llama-3.1-8b-instruct"
+
+
+@pytest.mark.django_db
+def test_ai_qa_gemini_fallback():
+    user = User.objects.create_user(email="ai_gemini@finance.test", password="pass")
+    client = APIClient()
+    client.force_authenticate(user=user)
+
+    fake_env = {
+        "CLOUDFLARE_ACCOUNT_ID": "mock-acc-id",
+        "CLOUDFLARE_API_TOKEN": "mock-token",
+        "GEMINI_API_KEY": "mock-gemini-key",
+    }
+
+    # Cloudflare fails with 401 Authentication error
+    with patch.dict("os.environ", fake_env):
+        with patch("finance.ai_service.request_cloudflare_api", side_effect=Exception("Cloudflare AI API Error (401)")):
+            with patch("finance.ai_service.request_gemini_api", return_value="Gemini fallback reply"):
+                res = client.post(
+                    "/api/finance/ai/qa/",
+                    {"messages": [{"role": "user", "content": "Help me"}]},
+                    format="json",
+                )
+                assert res.status_code == 200
+                assert res.json()["reply"] == "Gemini fallback reply"
+

@@ -111,7 +111,19 @@ Người dùng hiện tại: {ctx['display_name']}
     return system_prompt
 
 
+def clean_env(val, default=""):
+    if not val:
+        return default
+    v = str(val).strip()
+    if (v.startswith('"') and v.endswith('"')) or (v.startswith("'") and v.endswith("'")):
+        v = v[1:-1].strip()
+    return v
+
+
 def request_cloudflare_api(account_id, api_token, model, payload):
+    account_id = clean_env(account_id)
+    api_token = clean_env(api_token)
+    model = clean_env(model, "@cf/meta/llama-3.1-8b-instruct")
     url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/{model}"
     req = urllib.request.Request(
         url,
@@ -133,20 +145,84 @@ def request_cloudflare_api(account_id, api_token, model, payload):
         raise AIUpstreamError(f"Lỗi kết nối tới Cloudflare AI: {str(e)}")
 
 
-def call_cloudflare_ai(messages, user):
-    account_id = os.environ.get("CLOUDFLARE_ACCOUNT_ID")
-    api_token = os.environ.get("CLOUDFLARE_API_TOKEN")
-    model = os.environ.get("CLOUDFLARE_AI_MODEL", "@cf/meta/llama-3.1-8b-instruct")
+def request_gemini_api(api_key, model, system_prompt, messages):
+    api_key = clean_env(api_key)
+    model = clean_env(model, "gemini-1.5-flash")
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
-    if not account_id or not api_token:
-        raise AIConfigurationError(
-            "Chưa cấu hình CLOUDFLARE_ACCOUNT_ID hoặc CLOUDFLARE_API_TOKEN trong file .env của backend. "
-            "Vui lòng thêm thông tin tài khoản Cloudflare Workers AI để kích hoạt tính năng này."
-        )
+    contents = []
+    for msg in messages:
+        role = "user" if msg["role"] == "user" else "model"
+        contents.append({
+            "role": role,
+            "parts": [{"text": msg["content"]}]
+        })
 
-    system_prompt = build_system_prompt(user)
+    payload = {
+        "systemInstruction": {
+            "parts": [{"text": system_prompt}]
+        },
+        "contents": contents,
+    }
 
-    # Filter out any client-injected 'system' prompts and keep only user/assistant messages
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=35) as response:
+            res_data = response.read().decode("utf-8")
+            data = json.loads(res_data)
+            candidates = data.get("candidates") or []
+            if candidates:
+                parts = candidates[0].get("content", {}).get("parts", [])
+                if parts and "text" in parts[0]:
+                    return parts[0]["text"]
+            raise AIUpstreamError("Không nhận được câu trả lời từ Google Gemini.")
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode("utf-8")
+        raise AIUpstreamError(f"Gemini API Error ({e.code}): {err_body}")
+    except Exception as e:
+        raise AIUpstreamError(f"Lỗi kết nối tới Gemini API: {str(e)}")
+
+
+def request_groq_api(api_key, model, system_prompt, messages):
+    api_key = clean_env(api_key)
+    model = clean_env(model, "llama-3.3-70b-versatile")
+    url = "https://api.groq.com/openai/v1/chat/completions"
+
+    formatted_messages = [{"role": "system", "content": system_prompt}] + messages
+    payload = {
+        "model": model,
+        "messages": formatted_messages,
+    }
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=35) as response:
+            res_data = response.read().decode("utf-8")
+            data = json.loads(res_data)
+            choices = data.get("choices") or []
+            if choices and "message" in choices[0]:
+                return choices[0]["message"].get("content", "")
+            raise AIUpstreamError("Không nhận được câu trả lời từ Groq AI.")
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode("utf-8")
+        raise AIUpstreamError(f"Groq API Error ({e.code}): {err_body}")
+    except Exception as e:
+        raise AIUpstreamError(f"Lỗi kết nối tới Groq AI: {str(e)}")
+
+
+def _extract_valid_messages(messages):
     valid_messages = []
     for msg in messages:
         if isinstance(msg, dict) and msg.get("role") in ("user", "assistant") and "content" in msg:
@@ -154,15 +230,18 @@ def call_cloudflare_ai(messages, user):
                 "role": msg["role"],
                 "content": str(msg["content"]),
             })
+    return valid_messages[-12:]
 
-    # Window message history to the most recent 12 messages to fit context limits
-    recent_history = valid_messages[-12:]
+
+def _call_cloudflare_flow(messages, user, account_id, api_token):
+    model = clean_env(os.environ.get("CLOUDFLARE_AI_MODEL"), "@cf/meta/llama-3.1-8b-instruct")
+    system_prompt = build_system_prompt(user)
+    recent_history = _extract_valid_messages(messages)
     formatted_messages = [{"role": "system", "content": system_prompt}] + recent_history
 
     payload = {"messages": formatted_messages}
     data = request_cloudflare_api(account_id, api_token, model, payload)
 
-    # Cloudflare Workers AI returns { "result": { "response": "..." }, "success": true }
     if isinstance(data, dict) and data.get("success") is False:
         errs = data.get("errors") or []
         err_msg = ", ".join(e.get("message", str(e)) if isinstance(e, dict) else str(e) for e in errs)
@@ -179,4 +258,66 @@ def call_cloudflare_ai(messages, user):
         raise AIUpstreamError("Không nhận được câu trả lời hợp lệ từ mô hình AI.")
 
     return str(response_text)
+
+
+def _call_gemini_flow(messages, user, api_key):
+    model = clean_env(os.environ.get("GEMINI_AI_MODEL"), "gemini-1.5-flash")
+    system_prompt = build_system_prompt(user)
+    recent_history = _extract_valid_messages(messages)
+    return str(request_gemini_api(api_key, model, system_prompt, recent_history))
+
+
+def _call_groq_flow(messages, user, api_key):
+    model = clean_env(os.environ.get("GROQ_AI_MODEL"), "llama-3.3-70b-versatile")
+    system_prompt = build_system_prompt(user)
+    recent_history = _extract_valid_messages(messages)
+    return str(request_groq_api(api_key, model, system_prompt, recent_history))
+
+
+def call_ai(messages, user):
+    provider = clean_env(os.environ.get("AI_PROVIDER", "auto")).lower()
+    cf_account_id = clean_env(os.environ.get("CLOUDFLARE_ACCOUNT_ID"))
+    cf_api_token = clean_env(os.environ.get("CLOUDFLARE_API_TOKEN"))
+    gemini_key = clean_env(os.environ.get("GEMINI_API_KEY"))
+    groq_key = clean_env(os.environ.get("GROQ_API_KEY"))
+
+    if provider == "gemini":
+        if not gemini_key:
+            raise AIConfigurationError("Chưa cấu hình GEMINI_API_KEY trong biến môi trường.")
+        return _call_gemini_flow(messages, user, gemini_key)
+    elif provider == "groq":
+        if not groq_key:
+            raise AIConfigurationError("Chưa cấu hình GROQ_API_KEY trong biến môi trường.")
+        return _call_groq_flow(messages, user, groq_key)
+    elif provider == "cloudflare":
+        if not cf_account_id or not cf_api_token:
+            raise AIConfigurationError(
+                "Chưa cấu hình CLOUDFLARE_ACCOUNT_ID hoặc CLOUDFLARE_API_TOKEN trong biến môi trường."
+            )
+        return _call_cloudflare_flow(messages, user, cf_account_id, cf_api_token)
+
+    # Auto mode: Priority 1 is Cloudflare Workers AI (Teacher's requirement)
+    if cf_account_id and cf_api_token:
+        try:
+            return _call_cloudflare_flow(messages, user, cf_account_id, cf_api_token)
+        except Exception as cf_err:
+            if gemini_key:
+                return _call_gemini_flow(messages, user, gemini_key)
+            elif groq_key:
+                return _call_groq_flow(messages, user, groq_key)
+            raise cf_err
+
+    if gemini_key:
+        return _call_gemini_flow(messages, user, gemini_key)
+    elif groq_key:
+        return _call_groq_flow(messages, user, groq_key)
+
+    raise AIConfigurationError(
+        "Chưa cấu hình CLOUDFLARE_ACCOUNT_ID hoặc CLOUDFLARE_API_TOKEN trong file .env của backend. "
+        "Vui lòng thêm thông tin tài khoản Cloudflare Workers AI (hoặc GEMINI_API_KEY / GROQ_API_KEY) để kích hoạt tính năng này."
+    )
+
+
+# Backward compatibility
+call_cloudflare_ai = call_ai
 
