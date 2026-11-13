@@ -36,8 +36,29 @@ def test_verification_email_content(api_client):
 
 @pytest.mark.django_db
 def test_register_rejects_duplicate_email(api_client):
-    register(api_client)
-    assert register(api_client).status_code == 400
+    user = User.objects.create_user(email="active@example.com", password="strongpass123")
+    user.is_active = True
+    user.save()
+    res = register(api_client, email="active@example.com", password="newpass123456")
+    assert res.status_code == 400
+    assert "Email này đã được sử dụng." in res.json()["email"][0]
+
+
+@pytest.mark.django_db
+def test_register_allows_reregistration_if_unconfirmed(api_client):
+    # First registration
+    res1 = register(api_client, email="pending@example.com", password="strongpass123")
+    assert res1.status_code == 202
+    user = User.objects.get(email="pending@example.com")
+    assert not user.is_active
+    assert user.check_password("strongpass123")
+
+    # Second registration before or after 3-day expiration
+    res2 = register(api_client, email="pending@example.com", password="newstrongpass456")
+    assert res2.status_code == 202
+    user.refresh_from_db()
+    assert not user.is_active
+    assert user.check_password("newstrongpass456")
 
 
 @pytest.mark.django_db
