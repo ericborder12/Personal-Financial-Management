@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AppShell from "./components/layout/AppShell";
 import DashboardPage from "./pages/DashboardPage";
 import TransactionsPage from "./pages/TransactionsPage";
@@ -8,6 +8,7 @@ import BudgetsPage from "./pages/BudgetsPage";
 import ReportsPage from "./pages/ReportsPage";
 import SavingsPage from "./pages/SavingsPage";
 import QAPage from "./pages/QAPage";
+import SupportPage from "./pages/SupportPage";
 import TransactionModal from "./components/transactions/TransactionModal";
 import { useAuth } from "./auth/useAuth";
 import { useAccounts, useCategories } from "./hooks/useFinance";
@@ -35,6 +36,16 @@ export default function App() {
     await refreshAccounts();
     setRefreshTrigger((v) => v + 1);
   };
+
+  // Keep admin presence active on site while logged in
+  useEffect(() => {
+    if (!user?.is_staff && !user?.is_superuser) return;
+    financeApi.sendSupportHeartbeat().catch(() => {});
+    const interval = setInterval(() => {
+      financeApi.sendSupportHeartbeat().catch(() => {});
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   return (
     <AppShell
@@ -82,6 +93,10 @@ export default function App() {
 
       {activeTab === "qa" && (
         <QAPage key={`qa-${refreshTrigger}`} />
+      )}
+
+      {activeTab === "support" && (
+        <SupportPage key={`support-${refreshTrigger}`} user={user} />
       )}
 
       {/* Global Quick Transaction Modal */}

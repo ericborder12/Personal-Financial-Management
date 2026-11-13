@@ -1,6 +1,16 @@
 from django.contrib import admin
 
-from .models import Account, AISecurityAlert, Budget, Category, Profile, SavingsDeposit, Transaction
+from .models import (
+    Account,
+    AISecurityAlert,
+    Budget,
+    Category,
+    ChatMessage,
+    Feedback,
+    Profile,
+    SavingsDeposit,
+    Transaction,
+)
 
 
 @admin.register(Profile)
@@ -52,3 +62,21 @@ class AISecurityAlertAdmin(admin.ModelAdmin):
     def short_prompt(self, obj):
         return (obj.prompt[:80] + "...") if len(obj.prompt) > 80 else obj.prompt
     short_prompt.short_description = "Nội dung câu hỏi nghi vấn"
+
+
+@admin.register(ChatMessage)
+class ChatMessageAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "sender", "receiver", "short_content", "is_read")
+    list_filter = ("is_read", "created_at")
+    search_fields = ("sender__email", "receiver__email", "content")
+
+    def short_content(self, obj):
+        return (obj.content[:60] + "...") if len(obj.content) > 60 else obj.content
+    short_content.short_description = "Nội dung tin nhắn"
+
+
+@admin.register(Feedback)
+class FeedbackAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "user", "type", "title", "status")
+    list_filter = ("type", "status", "created_at")
+    search_fields = ("user__email", "title", "content", "admin_reply")

@@ -1,5 +1,7 @@
+from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 from django.db.models import Case, IntegerField, Q, Sum, Value, When
+from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_date
 from django.utils import timezone
 from rest_framework import filters, generics, pagination, serializers, status, viewsets
@@ -8,15 +10,26 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Account, Budget, Category, Profile, Transaction, SavingsDeposit
+from .models import (
+    Account,
+    Budget,
+    Category,
+    ChatMessage,
+    Feedback,
+    Profile,
+    SavingsDeposit,
+    Transaction,
+)
 from .serializers import (
     AccountSerializer,
     BudgetSerializer,
     CategorySerializer,
+    ChatMessageSerializer,
+    FeedbackSerializer,
     ImportSerializer,
     ProfileSerializer,
-    TransactionSerializer,
     SavingsDepositSerializer,
+    TransactionSerializer,
 )
 
 
@@ -715,5 +728,228 @@ class SavingsDepositViewSet(viewsets.ModelViewSet):
             if not instance.is_settled and instance.transfer_transaction:
                 instance.transfer_transaction.delete()
             instance.delete()
+
+
+class SupportPresenceView(APIView):
+    """
+    Check if an admin is online and report user's presence heartbeat.
+    Admin is considered online if any staff/superuser has last_seen within 3 minutes.
+    """
+
+    def get(self, request):
+        now = timezone.now()
+        threshold = now - timezone.timedelta(minutes=3)
+        User = get_user_model()
+
+        if request.user.is_authenticated:
+            request.user.last_seen = now
+            request.user.save(update_fields=["last_seen"])
+
+        admin_online = User.objects.filter(
+            Q(is_staff=True) | Q(is_superuser=True),
+            last_seen__gte=threshold,
+        ).exists()
+
+        latest_admin = (
+            User.objects.filter(
+                Q(is_staff=True) | Q(is_superuser=True),
+                last_seen__isnull=False,
+            )
+            .order_by("-last_seen")
+            .first()
+        )
+
+        return Response(
+            {
+                "admin_online": admin_online,
+                "admin_last_seen": latest_admin.last_seen if latest_admin else None,
+                "is_admin": bool(
+                    request.user.is_authenticated
+                    and (request.user.is_staff or request.user.is_superuser)
+                ),
+            }
+        )
+
+    def post(self, request):
+        return self.get(request)
+
+
+class ChatMessageListCreateView(APIView):
+    """
+    User View:
+      - GET: Get all messages between request.user and admin. Marks incoming messages as read.
+      - POST: Send a message to admin.
+    Admin View:
+      - GET:
+        - If query param `user_id`: Returns messages between admin and that user. Marks incoming as read.
+        - If query param `conversations=true` (or default without user_id): Returns list of conversations.
+      - POST: Send a message to user (requires `receiver_id`).
+    """
+
+    def get(self, request):
+        User = get_user_model()
+        is_admin = request.user.is_staff or request.user.is_superuser
+
+        if is_admin:
+            user_id = request.query_params.get("user_id")
+            if user_id:
+                try:
+                    target_user = User.objects.get(id=user_id)
+                except (User.DoesNotExist, ValueError):
+                    return Response(
+                        {"detail": "User không tồn tại."},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+
+                messages = (
+                    ChatMessage.objects.filter(
+                        Q(sender=target_user) | Q(receiver=target_user)
+                    )
+                    .select_related("sender", "receiver")
+                    .order_by("created_at")
+                )
+
+                # Mark incoming unread messages from this user as read
+                ChatMessage.objects.filter(sender=target_user, is_read=False).update(is_read=True)
+
+                serializer = ChatMessageSerializer(messages, many=True)
+                return Response(serializer.data)
+
+            # Return list of conversations for admin
+            sent_user_ids = ChatMessage.objects.filter(
+                sender__is_staff=False, sender__is_superuser=False
+            ).values_list("sender_id", flat=True)
+            recv_user_ids = ChatMessage.objects.filter(
+                receiver__isnull=False, receiver__is_staff=False, receiver__is_superuser=False
+            ).values_list("receiver_id", flat=True)
+
+            all_user_ids = set(sent_user_ids).union(set(recv_user_ids))
+            users = User.objects.filter(id__in=all_user_ids)
+
+            conversations = []
+            for u in users:
+                last_msg = (
+                    ChatMessage.objects.filter(Q(sender=u) | Q(receiver=u))
+                    .order_by("-created_at")
+                    .first()
+                )
+                unread_count = ChatMessage.objects.filter(sender=u, is_read=False).count()
+                conversations.append(
+                    {
+                        "user_id": u.id,
+                        "email": u.email,
+                        "display_name": u.display_name or u.email.split("@")[0],
+                        "last_seen": u.last_seen,
+                        "last_message": last_msg.content if last_msg else "",
+                        "last_message_at": last_msg.created_at if last_msg else None,
+                        "unread_count": unread_count,
+                    }
+                )
+
+            conversations.sort(
+                key=lambda x: x["last_message_at"] or timezone.now(),
+                reverse=True,
+            )
+            return Response(conversations)
+
+        else:
+            # Regular user view
+            messages = (
+                ChatMessage.objects.filter(
+                    Q(sender=request.user) | Q(receiver=request.user)
+                )
+                .select_related("sender", "receiver")
+                .order_by("created_at")
+            )
+
+            # Mark messages received by this user as read
+            ChatMessage.objects.filter(receiver=request.user, is_read=False).update(is_read=True)
+
+            serializer = ChatMessageSerializer(messages, many=True)
+            return Response(serializer.data)
+
+    def post(self, request):
+        User = get_user_model()
+        is_admin = request.user.is_staff or request.user.is_superuser
+        content = request.data.get("content", "").strip()
+
+        if not content:
+            return Response(
+                {"content": ["Nội dung tin nhắn không được để trống."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        receiver = None
+        if is_admin:
+            receiver_id = request.data.get("receiver_id")
+            if not receiver_id:
+                return Response(
+                    {"receiver_id": ["Cần chỉ định ID người nhận."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                receiver = User.objects.get(id=receiver_id)
+            except (User.DoesNotExist, ValueError):
+                return Response(
+                    {"detail": "Người nhận không tồn tại."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            # Find an active admin or default to first staff
+            receiver = (
+                User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
+                .order_by("-last_seen")
+                .first()
+            )
+
+        message = ChatMessage.objects.create(
+            sender=request.user,
+            receiver=receiver,
+            content=content,
+        )
+        serializer = ChatMessageSerializer(message)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class FeedbackListCreateView(generics.ListCreateAPIView):
+    serializer_class = FeedbackSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff or user.is_superuser:
+            qs = Feedback.objects.all().select_related("user")
+            fb_type = self.request.query_params.get("type")
+            fb_status = self.request.query_params.get("status")
+            if fb_type in ("bug", "feature", "other"):
+                qs = qs.filter(type=fb_type)
+            if fb_status in ("pending", "reviewed", "resolved"):
+                qs = qs.filter(status=fb_status)
+            return qs.order_by("-created_at")
+        return Feedback.objects.filter(user=user).select_related("user").order_by("-created_at")
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class FeedbackDetailView(generics.RetrieveUpdateAPIView):
+    serializer_class = FeedbackSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff or user.is_superuser:
+            return Feedback.objects.all().select_related("user")
+        return Feedback.objects.filter(user=user).select_related("user")
+
+    def perform_update(self, serializer):
+        user = self.request.user
+        if user.is_staff or user.is_superuser:
+            admin_reply = serializer.validated_data.get("admin_reply")
+            if admin_reply and "status" not in serializer.validated_data:
+                serializer.save(status="resolved")
+            else:
+                serializer.save()
+        else:
+            serializer.save()
+
 
 

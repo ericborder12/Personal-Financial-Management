@@ -161,4 +161,31 @@ export const api = {
   updateProfile: (data) => request("/profile/", { method: "PUT", body: data }),
 
   importData: (data) => request("/import/", { method: "POST", body: data }),
+
+  // Support & Feedback
+  getSupportPresence: () => request("/finance/support/presence/"),
+  sendSupportHeartbeat: () => request("/finance/support/presence/", { method: "POST" }),
+  getChatMessages: (params = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== "" && value !== null && value !== undefined) {
+        query.set(key, value);
+      }
+    });
+    const qs = query.toString();
+    return request(`/finance/support/messages/${qs ? `?${qs}` : ""}`);
+  },
+  sendChatMessage: (data) => request("/finance/support/messages/", { method: "POST", body: data }),
+  getFeedbacks: (params = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== "" && value !== null && value !== undefined) {
+        query.set(key, value);
+      }
+    });
+    const qs = query.toString();
+    return request(`/finance/support/feedback/${qs ? `?${qs}` : ""}`);
+  },
+  createFeedback: (data) => request("/finance/support/feedback/", { method: "POST", body: data }),
+  updateFeedback: (id, data) => request(`/finance/support/feedback/${id}/`, { method: "PATCH", body: data }),
 };

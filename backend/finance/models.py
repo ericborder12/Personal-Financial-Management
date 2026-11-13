@@ -264,4 +264,65 @@ class AISecurityAlert(models.Model):
         return f"[{self.created_at:%d/%m/%Y %H:%M}] {self.user.email} - {self.reason}"
 
 
+class ChatMessage(models.Model):
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="sent_chat_messages",
+    )
+    receiver = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="received_chat_messages",
+        null=True,
+        blank=True,
+    )
+    content = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["created_at"]
+        verbose_name = "Tin nhắn hỗ trợ"
+        verbose_name_plural = "Tin nhắn hỗ trợ"
+
+    def __str__(self):
+        return f"{self.sender.email}: {self.content[:40]}"
+
+
+class Feedback(models.Model):
+    FEEDBACK_TYPES = [
+        ("bug", "Báo cáo lỗi phát sinh"),
+        ("feature", "Đề xuất tính năng mới"),
+        ("other", "Ý kiến đóng góp khác"),
+    ]
+    STATUS_CHOICES = [
+        ("pending", "Chờ xem xét"),
+        ("reviewed", "Đã tiếp nhận"),
+        ("resolved", "Đã giải quyết / phản hồi"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="feedbacks",
+    )
+    type = models.CharField(max_length=20, choices=FEEDBACK_TYPES, default="feature")
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    admin_reply = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Thư góp ý & Báo lỗi"
+        verbose_name_plural = "Hộp thư góp ý & Báo lỗi"
+
+    def __str__(self):
+        return f"[{self.get_type_display()}] {self.title} ({self.user.email})"
+
+
+
 

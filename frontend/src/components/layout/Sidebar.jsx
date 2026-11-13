@@ -8,6 +8,7 @@ import {
   IconReports,
   IconVault,
   IconSparkles,
+  IconChat,
   IconX,
   IconShield,
   IconArrowUpRight,
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { id: "budgets", label: "Ngân sách tháng", icon: IconBudgets },
   { id: "reports", label: "Báo cáo & Phân tích", icon: IconReports },
   { id: "qa", label: "Trợ lý AI & Hỏi đáp", icon: IconSparkles },
+  { id: "support", label: "Hỗ trợ & Góp ý", icon: IconChat },
 ];
 
 export default function Sidebar({

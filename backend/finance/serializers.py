@@ -1,6 +1,15 @@
 from rest_framework import serializers
 
-from .models import Account, Budget, Category, Profile, Transaction, SavingsDeposit
+from .models import (
+    Account,
+    Budget,
+    Category,
+    ChatMessage,
+    Feedback,
+    Profile,
+    SavingsDeposit,
+    Transaction,
+)
 
 MAX_AMOUNT = 9223372036854775807
 
@@ -249,5 +258,84 @@ class SavingsDepositSerializer(serializers.ModelSerializer):
         validated_data.pop("term_months", None)
         validated_data.pop("payout_type", None)
         return super().update(instance, validated_data)
+
+
+class ChatMessageSerializer(serializers.ModelSerializer):
+    sender_email = serializers.CharField(source="sender.email", read_only=True)
+    sender_name = serializers.CharField(source="sender.display_name", read_only=True)
+    receiver_email = serializers.CharField(source="receiver.email", read_only=True, default=None)
+    is_from_admin = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ChatMessage
+        fields = [
+            "id",
+            "sender",
+            "sender_email",
+            "sender_name",
+            "receiver",
+            "receiver_email",
+            "content",
+            "is_read",
+            "is_from_admin",
+            "created_at",
+        ]
+        read_only_fields = [
+            "id",
+            "sender",
+            "sender_email",
+            "sender_name",
+            "receiver_email",
+            "is_from_admin",
+            "created_at",
+        ]
+
+    def get_is_from_admin(self, obj):
+        return bool(obj.sender and (obj.sender.is_staff or obj.sender.is_superuser))
+
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    user_email = serializers.CharField(source="user.email", read_only=True)
+    user_name = serializers.CharField(source="user.display_name", read_only=True)
+    type_display = serializers.CharField(source="get_type_display", read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+
+    class Meta:
+        model = Feedback
+        fields = [
+            "id",
+            "user",
+            "user_email",
+            "user_name",
+            "type",
+            "type_display",
+            "title",
+            "content",
+            "status",
+            "status_display",
+            "admin_reply",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "user",
+            "user_email",
+            "user_name",
+            "type_display",
+            "status_display",
+            "created_at",
+            "updated_at",
+        ]
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        if request and hasattr(request, "user"):
+            user = request.user
+            if not (user.is_staff or user.is_superuser):
+                attrs.pop("status", None)
+                attrs.pop("admin_reply", None)
+        return attrs
+
 
 
