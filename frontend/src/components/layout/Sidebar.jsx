@@ -56,7 +56,7 @@ export default function Sidebar({
         <div className="flex h-20 items-center justify-between px-6 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-3.5">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-xl shadow-md shadow-blue-500/25">
-              ₫
+              $
             </div>
             <div>
               <span className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white leading-none block">

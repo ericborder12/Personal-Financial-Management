@@ -209,7 +209,7 @@ export default function LoginPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-2xl font-black text-white shadow-md shadow-blue-500/25">
-              ₫
+              $
             </div>
             <div>
               <span className="text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
