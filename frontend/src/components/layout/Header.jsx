@@ -11,9 +11,12 @@ const TITLES = {
   dashboard: "Tổng quan tài chính",
   transactions: "Sổ giao dịch thu chi",
   accounts: "Tài khoản tiền & Ví",
+  savings: "Sổ tiết kiệm",
   categories: "Danh mục phân loại",
   budgets: "Hạn mức ngân sách tháng",
   reports: "Báo cáo & Phân tích chi tiêu",
+  qa: "Trợ lý AI & Hỏi đáp",
+  support: "Hỗ trợ & Góp ý",
 };
 
 export default function Header({
