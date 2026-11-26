@@ -4,10 +4,10 @@ set -euo pipefail
 # ==============================================================================
 # FinanceFlow VM (Ubuntu 22.04 / 24.04) Deployment Script
 # Usage (run from the cloned repo root on the VM):
-#   bash deploy/setup_vm.sh finacialflow.duckdns.org
+#   bash deploy/setup_vm.sh financialflow.duckdns.org
 # ==============================================================================
 
-DOMAIN="${1:-finacialflow.duckdns.org}"
+DOMAIN="${1:-financialflow.duckdns.org}"
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_USER="${SUDO_USER:-$USER}"
 
