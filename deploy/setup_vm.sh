@@ -19,8 +19,8 @@ echo ""
 
 if [ ! -f "$APP_DIR/.env" ]; then
   echo "[!] Không tìm thấy file $APP_DIR/.env."
-  cp "$APP_DIR/deploy/.env.vm.example" "$APP_DIR/.env"
-  echo "[!] Đã tạo mẫu $APP_DIR/.env từ deploy/.env.vm.example."
+  cp "$APP_DIR/deploy/env.vm.example" "$APP_DIR/.env"
+  echo "[!] Đã tạo mẫu $APP_DIR/.env từ deploy/env.vm.example."
   echo "    Hãy mở file .env điền đủ SECRET_KEY, DATABASE_URL, GEMINI_API_KEY, EMAIL..., rồi chạy lại script này!"
   exit 1
 fi
