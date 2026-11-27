@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.password_validation import validate_password
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.db import transaction
 from django.utils.encoding import force_bytes, force_str
@@ -38,29 +38,9 @@ class EmailDeliveryError(APIException):
     default_code = "email_delivery_failed"
 
 
-class EmailVerificationTokenGenerator(PasswordResetTokenGenerator):
-    key_salt = "accounts.tokens.EmailVerificationTokenGenerator"
-
-    def _make_hash_value(self, user, timestamp):
-        return f"{super()._make_hash_value(user, timestamp)}{user.is_email_verified}"
-
-
-class AccountPasswordResetTokenGenerator(PasswordResetTokenGenerator):
-    key_salt = "accounts.tokens.AccountPasswordResetTokenGenerator"
-
-
-email_verification_token_generator = EmailVerificationTokenGenerator()
-account_password_reset_token_generator = AccountPasswordResetTokenGenerator()
-
-
 def send_account_email(user, purpose):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
-    token_generator = (
-        email_verification_token_generator
-        if purpose == "verify"
-        else account_password_reset_token_generator
-    )
-    token = token_generator.make_token(user)
+    token = default_token_generator.make_token(user)
     params = urlencode({"uid": uid, "token": token})
     route = "verify" if purpose == "verify" else "reset"
     link = f"{settings.FRONTEND_URL}/?{route}=1&{params}"
@@ -113,7 +93,7 @@ def send_account_email(user, purpose):
         raise EmailDeliveryError()
 
 
-def token_user(data, *, purpose, active=None, email_verified=None):
+def token_user(data, *, active):
     serializer = EmailTokenSerializer(data=data)
     serializer.is_valid(raise_exception=True)
     try:
@@ -121,17 +101,10 @@ def token_user(data, *, purpose, active=None, email_verified=None):
         users = User.objects.filter(pk=user_id)
         if active is not None:
             users = users.filter(is_active=active)
-        if email_verified is not None:
-            users = users.filter(is_email_verified=email_verified)
         user = users.get()
     except (ValueError, TypeError, OverflowError, User.DoesNotExist):
         return None, serializer.validated_data
-    token_generator = (
-        email_verification_token_generator
-        if purpose == "verify"
-        else account_password_reset_token_generator
-    )
-    if not token_generator.check_token(user, serializer.validated_data["token"]):
+    if not default_token_generator.check_token(user, serializer.validated_data["token"]):
         return None, serializer.validated_data
     return user, serializer.validated_data
 
@@ -144,7 +117,7 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         with transaction.atomic():
-            user = serializer.save()
+            user = serializer.save(is_active=False)
             send_account_email(user, "verify")
         return Response(
             {"detail": "Hãy kiểm tra email để xác thực tài khoản trước khi đăng nhập."},
@@ -159,18 +132,14 @@ class LoginView(APIView):
     def post(self, request):
         email = request.data.get("email", "")
         password = request.data.get("password", "")
-        unverified_user = User.objects.filter(email__iexact=email).first()
-        if (
-            unverified_user
-            and not unverified_user.is_email_verified
-            and unverified_user.check_password(password)
-        ):
-            return Response(
-                {"detail": "Vui lòng xác thực email trước khi đăng nhập."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
         user = authenticate(request, username=email, password=password)
         if user is None:
+            inactive_user = User.objects.filter(email__iexact=email, is_active=False).first()
+            if inactive_user and inactive_user.check_password(password):
+                return Response(
+                    {"detail": "Vui lòng xác thực email trước khi đăng nhập."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             return Response(
                 {"detail": "Email hoặc mật khẩu không đúng."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -202,7 +171,7 @@ def verify_google_id_token(id_token):
         return None
 
     expected_client_id = getattr(settings, "GOOGLE_CLIENT_ID", "").strip()
-    if not expected_client_id or data.get("aud") != expected_client_id:
+    if expected_client_id and data.get("aud") != expected_client_id:
         return None
 
     email = data.get("email")
@@ -245,18 +214,11 @@ class GoogleLoginView(APIView):
                     email=email,
                     display_name=name or email.split("@")[0],
                     is_active=True,
-                    is_email_verified=True,
                 )
             else:
                 if not user.is_active:
-                    return Response(
-                        {"detail": "Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên."},
-                        status=status.HTTP_403_FORBIDDEN,
-                    )
-                if not user.is_email_verified:
-                    user.set_unusable_password()
-                    user.is_email_verified = True
-                    user.save(update_fields=["password", "is_email_verified"])
+                    user.is_active = True
+                    user.save(update_fields=["is_active"])
                 if not user.display_name and name:
                     user.display_name = name
                     user.save(update_fields=["display_name"])
@@ -277,16 +239,14 @@ class VerifyEmailView(APIView):
     authentication_classes = [CsrfEnforcingSessionAuthentication]
 
     def post(self, request):
-        user, _ = token_user(
-            request.data, purpose="verify", email_verified=False
-        )
+        user, _ = token_user(request.data, active=None)
         if user is None:
             return Response(
                 {"detail": "Liên kết xác thực không hợp lệ hoặc đã hết hạn."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        user.is_email_verified = True
-        user.save(update_fields=["is_email_verified"])
+        user.is_active = True
+        user.save(update_fields=["is_active"])
         return Response({"detail": "Email đã được xác thực. Bạn có thể đăng nhập."})
 
 
@@ -298,8 +258,7 @@ class VerificationEmailRequestView(APIView):
         serializer = EmailAddressSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = User.objects.filter(
-            email__iexact=serializer.validated_data["email"],
-            is_email_verified=False,
+            email__iexact=serializer.validated_data["email"], is_active=False
         ).first()
         if user:
             send_account_email(user, "verify")
@@ -316,9 +275,7 @@ class PasswordResetRequestView(APIView):
         serializer = EmailAddressSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = User.objects.filter(
-            email__iexact=serializer.validated_data["email"],
-            is_active=True,
-            is_email_verified=True,
+            email__iexact=serializer.validated_data["email"], is_active=True
         ).first()
         if user:
             send_account_email(user, "reset")
@@ -332,9 +289,7 @@ class PasswordResetConfirmView(APIView):
     authentication_classes = [CsrfEnforcingSessionAuthentication]
 
     def post(self, request):
-        user, token_data = token_user(
-            request.data, purpose="reset", active=True, email_verified=True
-        )
+        user, token_data = token_user(request.data, active=True)
         if user is None:
             return Response(
                 {"detail": "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn."},

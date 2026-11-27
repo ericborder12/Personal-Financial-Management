@@ -44,7 +44,7 @@ class RegisterSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         existing = User.objects.filter(email__iexact=value).first()
-        if existing:
+        if existing and existing.is_active:
             raise serializers.ValidationError("Email này đã được sử dụng.")
         return value
 
@@ -56,13 +56,14 @@ class RegisterSerializer(serializers.Serializer):
         email = validated_data["email"].strip()
         password = validated_data["password"]
         display_name = validated_data.get("display_name", "")
-        return User.objects.create_user(
-            email=email,
-            password=password,
-            display_name=display_name,
-            is_active=True,
-            is_email_verified=False,
-        )
+        existing = User.objects.filter(email__iexact=email, is_active=False).first()
+        if existing:
+            existing.set_password(password)
+            existing.display_name = display_name
+            existing.is_active = False
+            existing.save()
+            return existing
+        return User.objects.create_user(**validated_data)
 
 
 class EmailAddressSerializer(serializers.Serializer):

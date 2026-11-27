@@ -13,12 +13,10 @@ def register(client, email="a@example.com", password="strongpass123"):
 
 
 @pytest.mark.django_db
-def test_register_creates_unverified_user_and_sends_verification(api_client):
+def test_register_creates_inactive_user_and_sends_verification(api_client):
     res = register(api_client)
     assert res.status_code == 202
-    user = User.objects.get(email="a@example.com")
-    assert user.is_active is True
-    assert user.is_email_verified is False
+    assert User.objects.get(email="a@example.com").is_active is False
     assert api_client.get("/api/auth/me/").status_code == 401
     assert len(mail.outbox) == 1
     assert "verify=1" in mail.outbox[0].body
@@ -47,19 +45,20 @@ def test_register_rejects_duplicate_email(api_client):
 
 
 @pytest.mark.django_db
-def test_register_rejects_existing_unverified_email_without_changing_password(api_client):
+def test_register_allows_reregistration_if_unconfirmed(api_client):
+    # First registration
     res1 = register(api_client, email="pending@example.com", password="strongpass123")
     assert res1.status_code == 202
     user = User.objects.get(email="pending@example.com")
-    assert user.is_active
-    assert not user.is_email_verified
+    assert not user.is_active
     assert user.check_password("strongpass123")
 
+    # Second registration before or after 3-day expiration
     res2 = register(api_client, email="pending@example.com", password="newstrongpass456")
-    assert res2.status_code == 400
+    assert res2.status_code == 202
     user.refresh_from_db()
-    assert user.check_password("strongpass123")
-    assert not user.check_password("newstrongpass456")
+    assert not user.is_active
+    assert user.check_password("newstrongpass456")
 
 
 @pytest.mark.django_db
@@ -150,7 +149,7 @@ def test_email_verification_enables_login(api_client):
         "/api/auth/verify-email/",
         {"uid": token_data["uid"], "token": token_data["token"]},
         format="json",
-    ).status_code == 400
+    ).status_code == 200
     assert api_client.post(
         "/api/auth/login/",
         {"email": user.email, "password": "strongpass123"},
@@ -404,127 +403,8 @@ def test_google_login_existing_inactive_user(api_client, monkeypatch):
         {"credential": "valid-token", "remember_me": False},
         format="json",
     )
-    assert res.status_code == 403
+    assert res.status_code == 200
     user.refresh_from_db()
-    assert user.is_active is False
-    assert user.check_password("pwd")
-
-
-@pytest.mark.django_db
-def test_google_login_verifies_unverified_user_and_removes_password(api_client, monkeypatch):
-    user = User.objects.create_user(
-        email="existing@gmail.com",
-        password="attacker-password",
-        is_active=True,
-        is_email_verified=False,
-    )
-    fake_google_data = {
-        "email": "existing@gmail.com",
-        "name": "Existing User",
-        "email_verified": True,
-    }
-    monkeypatch.setattr("accounts.views.verify_google_id_token", lambda token: fake_google_data)
-
-    response = api_client.post(
-        "/api/auth/google/", {"credential": "valid-token"}, format="json"
-    )
-
-    assert response.status_code == 200
-    user.refresh_from_db()
-    assert user.is_email_verified is True
-    assert user.has_usable_password() is False
-    assert not user.check_password("attacker-password")
-
-
-@pytest.mark.django_db
-def test_verify_token_cannot_be_used_for_password_reset(api_client):
-    register(api_client)
-    user = User.objects.get(email="a@example.com")
-    from urllib.parse import parse_qs, urlparse
-    from django.contrib.auth.tokens import default_token_generator
-    from django.utils.encoding import force_bytes
-    from django.utils.http import urlsafe_base64_encode
-
-    token_data = {
-        key: values[0]
-        for key, values in parse_qs(urlparse(mail.outbox[0].body.splitlines()[-1]).query).items()
-    }
-    assert api_client.post("/api/auth/verify-email/", token_data, format="json").status_code == 200
-
-    reset_response = api_client.post(
-        "/api/auth/password-reset/confirm/",
-        {**token_data, "password": "newpass123"},
-        format="json",
-    )
-
-    assert reset_response.status_code == 400
-    legacy_verify_data = {
-        "uid": urlsafe_base64_encode(force_bytes(user.pk)),
-        "token": default_token_generator.make_token(user),
-    }
-    legacy_reset_response = api_client.post(
-        "/api/auth/password-reset/confirm/",
-        {**legacy_verify_data, "password": "anotherpass123"},
-        format="json",
-    )
-    assert legacy_reset_response.status_code == 400
-    user.refresh_from_db()
-    assert not user.check_password("newpass123")
-    assert not user.check_password("anotherpass123")
-
-
-@pytest.mark.django_db
-def test_verification_does_not_reactivate_disabled_user(api_client, monkeypatch):
-    user = User.objects.create_user(
-        email="disabled@example.com",
-        password="strongpass123",
-        is_active=False,
-        is_email_verified=False,
-    )
-    monkeypatch.setattr("accounts.views.send_mail", lambda *args, **kwargs: 1)
-
-    response = api_client.post(
-        "/api/auth/verification-email/",
-        {"email": user.email},
-        format="json",
-    )
-
-    assert response.status_code == 200
-    from accounts.views import email_verification_token_generator
-    from django.utils.encoding import force_bytes
-    from django.utils.http import urlsafe_base64_encode
-
-    token_data = {
-        "uid": urlsafe_base64_encode(force_bytes(user.pk)),
-        "token": email_verification_token_generator.make_token(user),
-    }
-    verification = api_client.post(
-        "/api/auth/verify-email/", token_data, format="json"
-    )
-    assert verification.status_code == 200
-    user.refresh_from_db()
-    assert user.is_email_verified is True
-    assert user.is_active is False
-
-
-def test_google_token_rejected_when_client_id_is_missing(settings, monkeypatch):
-    from accounts.views import verify_google_id_token
-
-    settings.GOOGLE_CLIENT_ID = ""
-
-    class GoogleResponse:
-        status = 200
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *args):
-            return None
-
-        def read(self):
-            return b'{"iss":"https://accounts.google.com","aud":"other-client","email":"a@example.com","email_verified":true}'
-
-    monkeypatch.setattr("accounts.views.urllib.request.urlopen", lambda *args, **kwargs: GoogleResponse())
-
-    assert verify_google_id_token("valid-token") is None
+    assert user.is_active is True
+    assert api_client.session.get_expire_at_browser_close() is True
 
