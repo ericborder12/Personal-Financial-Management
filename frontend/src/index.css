@@ -66,5 +66,78 @@
 }
 
 .dark .glass-panel {
-  background: rgba(15, 23, 42, 0.85);
+background: rgba(15, 23, 42, 0.85);
+}
+
+.dashboard-panel {
+min-width: 0;
+border: 1px solid #e4e9e3;
+border-radius: 22px;
+background: #fff;
+padding: 20px 22px;
+box-shadow: 0 2px 8px rgba(20, 40, 30, 0.025);
+}
+
+.dark .dashboard-panel {
+border-color: #26352d;
+background: #111c16;
+box-shadow: none;
+}
+
+.dashboard-panel-heading {
+display: flex;
+min-height: 42px;
+align-items: center;
+justify-content: space-between;
+gap: 12px;
+border-bottom: 1px solid #edf0ec;
+padding-bottom: 14px;
+}
+
+.dark .dashboard-panel-heading {
+border-color: #26352d;
+}
+
+.dashboard-panel-heading h2 {
+color: #1d2a21;
+font-size: 15px;
+font-weight: 800;
+letter-spacing: -0.025em;
+}
+
+.dark .dashboard-panel-heading h2 {
+color: #f1f5f2;
+}
+
+.dashboard-panel-heading p {
+margin-top: 4px;
+color: #8a968c;
+font-size: 12px;
+font-weight: 500;
+}
+
+.dashboard-count {
+flex: 0 0 auto;
+border-radius: 999px;
+background: #f3f6f2;
+padding: 6px 10px;
+color: #647368;
+font-size: 11px;
+font-weight: 700;
+}
+
+.dark .dashboard-count {
+background: #1d2a22;
+color: #b1c0b4;
+}
+
+@media (max-width: 640px) {
+.dashboard-panel {
+  border-radius: 18px;
+  padding: 17px 16px;
+}
+
+.dashboard-panel-heading h2 {
+  font-size: 14px;
+}
 }

@@ -14,7 +14,6 @@ export default function AppShell({
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-
   const [darkMode, setDarkMode] = useState(() => {
     return (
       localStorage.getItem("theme") === "dark" ||
@@ -34,8 +33,7 @@ export default function AppShell({
   }, [darkMode]);
 
   return (
-    <div className="flex min-h-screen bg-slate-50/70 text-slate-800 antialiased dark:bg-slate-950 dark:text-slate-100 selection:bg-blue-600 selection:text-white">
-      {/* Sidebar navigation */}
+    <div className="flex min-h-screen bg-[#f6f7f3] text-slate-800 antialiased selection:bg-[#d2edb8] selection:text-[#173b2d] dark:bg-[#0d1510] dark:text-slate-100">
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -45,8 +43,7 @@ export default function AppShell({
         onOpenProfile={() => setProfileOpen(true)}
       />
 
-      {/* Main content column */}
-      <div className="flex flex-1 flex-col min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col">
         <Header
           activeTab={activeTab}
           user={user}
@@ -57,13 +54,11 @@ export default function AppShell({
           darkMode={darkMode}
           setDarkMode={setDarkMode}
         />
-
-        <main className="flex-1 p-5 sm:p-7 lg:p-9 max-w-7xl w-full mx-auto space-y-6">
+        <main className="mx-auto w-full max-w-[1480px] flex-1 space-y-6 p-4 sm:space-y-7 sm:p-6 xl:p-8">
           {children}
         </main>
       </div>
 
-      {/* User Profile & Settings Modal */}
       <ProfileModal
         isOpen={profileOpen}
         onClose={() => setProfileOpen(false)}

@@ -1,56 +1,46 @@
 import React from "react";
 import { formatVND } from "../../constants";
 
-export default function StatCard({ title, amount, subtitle, icon, trend, color = "blue" }) {
-  const colorStyles = {
-    blue: {
-      badge: "text-blue-600 bg-blue-50 dark:bg-blue-950/50 dark:text-blue-400 border-blue-100 dark:border-blue-900/40",
-      accent: "bg-blue-500",
-      text: "text-blue-600 dark:text-blue-400",
-    },
-    emerald: {
-      badge: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/50 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/40",
-      accent: "bg-emerald-500",
-      text: "text-emerald-600 dark:text-emerald-400",
-    },
-    rose: {
-      badge: "text-rose-600 bg-rose-50 dark:bg-rose-950/50 dark:text-rose-400 border-rose-100 dark:border-rose-900/40",
-      accent: "bg-rose-500",
-      text: "text-rose-600 dark:text-rose-400",
-    },
-    purple: {
-      badge: "text-purple-600 bg-purple-50 dark:bg-purple-950/50 dark:text-purple-400 border-purple-100 dark:border-purple-900/40",
-      accent: "bg-purple-500",
-      text: "text-purple-600 dark:text-purple-400",
-    },
-  };
+const COLOR_STYLES = {
+  emerald: {
+    icon: "border-[#bbf7d0] bg-[#ecfdf5] text-[#15803d] dark:border-emerald-900/50 dark:bg-emerald-950/50 dark:text-emerald-300",
+    marker: "bg-[#22c55e]",
+  },
+  rose: {
+    icon: "border-[#f2e0d9] bg-[#fbf1ed] text-[#b65d43] dark:border-rose-900/50 dark:bg-rose-950/50 dark:text-rose-300",
+    marker: "bg-[#e9967c]",
+  },
+  purple: {
+    icon: "border-[#e5e0f0] bg-[#f4f1f8] text-[#6f62a8] dark:border-violet-900/50 dark:bg-violet-950/50 dark:text-violet-300",
+    marker: "bg-[#8b7bbb]",
+  },
+};
 
-  const scheme = colorStyles[color] || colorStyles.blue;
+export default function StatCard({ title, amount, subtitle, icon, color = "emerald" }) {
+  const scheme = COLOR_STYLES[color] || COLOR_STYLES.emerald;
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
-      {/* Top micro accent bar on hover */}
-      <div className={`absolute top-0 left-0 right-0 h-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${scheme.accent}`} />
-
-      <div className="flex items-center justify-between">
-        <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-          {title}
-        </span>
+    <div className="flex min-w-0 flex-col justify-between rounded-[20px] border border-[#e4e9e3] bg-white p-5 shadow-[0_2px_8px_rgba(20,40,30,0.025)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#cbd9cc] hover:shadow-[0_10px_24px_rgba(20,40,30,0.07)] dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <span className="block truncate text-xs font-bold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
+            {title}
+          </span>
+          <span className={`mt-3 block h-1 w-7 rounded-full ${scheme.marker}`} />
+        </div>
         {icon && (
-          <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${scheme.badge}`}>
+          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${scheme.icon}`}>
             {icon}
           </div>
         )}
       </div>
-
-      <div className="mt-3.5">
-        <div className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white tabular-nums">
+      <div className="mt-5 min-w-0">
+        <div className="break-words text-[clamp(1.1rem,1.7vw,1.55rem)] font-extrabold leading-tight tracking-[-0.045em] text-slate-900 tabular-nums dark:text-white">
           {formatVND(amount)}
         </div>
         {subtitle && (
-          <div className="mt-1.5 flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
-            {trend && <span className={`font-semibold ${scheme.text}`}>{trend}</span>}
-            <span>{subtitle}</span>
+          <div className="mt-2 truncate text-xs font-medium capitalize text-slate-500 dark:text-slate-400">
+            {subtitle}
           </div>
         )}
       </div>
